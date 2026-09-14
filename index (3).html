@@ -1,0 +1,3747 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vantage</title>
+<style>
+  :root {
+    color-scheme: light;
+    --purple: #6b4ba6;
+    --purple-light: #dcc8ff;
+    --purple-light-2: #e5d5ff;
+    --bg: #fafbfe;
+    --text: #1a1a2e;
+    --text-2: #666;
+    --text-3: #999;
+    --hairline: rgba(200, 210, 230, 0.3);
+    --nav-h: 60px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  img { max-width: 100%; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button { font-family: inherit; cursor: pointer; }
+  textarea { font-family: inherit; }
+
+  /* ---------- Nav ---------- */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1.5rem;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 0.5px solid var(--hairline);
+    z-index: 100;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--purple);
+    margin-right: 1.5rem;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .nav-link {
+    background: none;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-2);
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .nav-link:hover { background: rgba(220, 200, 255, 0.15); }
+  .nav-link.active {
+    background: rgba(220, 200, 255, 0.25);
+    color: var(--purple);
+  }
+
+  .nav-spacer { flex: 1 1 20px; min-width: 8px; }
+  .rank-badge {
+    flex: none;
+    background: rgba(220, 200, 255, 0.18);
+    border: 0.5px solid var(--hairline);
+    color: var(--purple);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .rank-badge:hover { background: rgba(220, 200, 255, 0.3); }
+
+  /* ---------- Views ---------- */
+  main {
+    position: absolute;
+    top: var(--nav-h); left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+  }
+  .view { display: none; height: 100%; }
+  .view.active { display: block; }
+
+  .scroll-view {
+    height: 100%;
+    overflow-y: auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .page-heading {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 1.25rem;
+  }
+
+  .section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    color: #bbb;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ---------- Home ---------- */
+  #home { position: relative; height: 100%; overflow: hidden; }
+
+  .mode-toggle {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 0.5px solid var(--hairline);
+    border-radius: 14px;
+    z-index: 20;
+  }
+  .mode-btn {
+    border: none;
+    background: none;
+    padding: 6px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-3);
+    transition: background 0.15s, color 0.15s;
+  }
+  .mode-btn:hover { color: var(--purple); }
+  .mode-btn.active { background: rgba(220, 200, 255, 0.35); color: var(--purple); }
+
+  .stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 78%, rgba(0, 0, 0, 0.35) 100%);
+    mask-image: radial-gradient(circle at 50% 50%, #000 78%, rgba(0, 0, 0, 0.35) 100%);
+  }
+  .stage[hidden] { display: none; }
+  .stage.dragging { cursor: grabbing; }
+
+  #grid, #kwPlane { position: absolute; top: 50%; left: 50%; }
+
+  /* design tiles */
+  .tile {
+    position: absolute;
+    left: 0; top: 0;
+    width: 100px;
+    height: 120px;
+    margin: -60px 0 0 -50px;
+    will-change: transform;
+  }
+  .tile-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    border: 0.5px solid rgba(200, 210, 230, 0.5);
+    display: flex;
+    align-items: flex-end;
+    padding: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(26, 26, 46, 0.55);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    user-select: none;
+  }
+  .tile:hover { z-index: 5; }
+  .tile:hover .tile-inner {
+    transform: scale(1.08);
+    box-shadow: 0 8px 24px rgba(107, 75, 166, 0.12);
+  }
+  .tile.is-focal .tile-inner {
+    border-color: var(--purple-light);
+    box-shadow: 0 0 0 4px rgba(220, 200, 255, 0.18);
+  }
+
+  /* keyword tiles */
+  .tag {
+    position: absolute;
+    left: 0; top: 0;
+    white-space: nowrap;
+    padding: 8px 16px;
+    background: rgba(220, 200, 255, 0.15);
+    border: 0.5px solid rgba(220, 200, 255, 0.3);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--purple);
+    transition: background 0.15s, border-color 0.15s;
+    will-change: transform;
+  }
+  .tag:hover { background: rgba(220, 200, 255, 0.3); }
+  .tag.is-focal {
+    background: rgba(220, 200, 255, 0.45);
+    border-color: rgba(220, 200, 255, 0.7);
+  }
+  .tag.selected {
+    background: rgba(220, 200, 255, 0.55);
+    border-color: var(--purple-light);
+    color: #5a3f96;
+  }
+
+  .focal {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 130px;
+    height: 160px;
+    transform: translate(-50%, -50%);
+    border: 2px solid var(--purple-light);
+    border-radius: 16px;
+    box-shadow: 0 0 0 8px rgba(220, 200, 255, 0.1);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .focal.kw {
+    width: 150px;
+    height: 52px;
+    border-radius: 20px;
+  }
+
+  .home-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 2rem;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: var(--text-3);
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+  }
+
+  .quick-add {
+    position: absolute;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 20;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 0.5px solid var(--hairline);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--purple);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 22px rgba(107, 75, 166, 0.18);
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .quick-add:hover { transform: scale(1.06); background: rgba(255, 255, 255, 0.97); }
+  .quick-add:active { transform: scale(0.95); }
+  .quick-add svg { width: 28px; height: 28px; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 5.25rem;
+    transform: translate(-50%, 8px);
+    background: rgba(26, 26, 46, 0.9);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 300;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---------- Research ---------- */
+  .search-input {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 0.5px solid rgba(200, 210, 230, 0.5);
+    background: rgba(240, 245, 255, 0.5);
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--purple-light); }
+
+  .research-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .research-head .page-heading { margin-bottom: 0; }
+
+  .seg {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 0.5px solid var(--hairline);
+    border-radius: 12px;
+  }
+  .seg-btn {
+    border: none;
+    background: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-3);
+    transition: background 0.15s, color 0.15s;
+  }
+  .seg-btn:hover { color: var(--purple); }
+  .seg-btn.active { background: rgba(220, 200, 255, 0.35); color: var(--purple); }
+
+  .match-note { font-size: 12px; color: var(--text-3); margin: 0 0 1rem; }
+
+  .new-kw-row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+  .new-kw-row .search-input { margin-bottom: 0; flex: 1 1 220px; }
+  .new-kw-row select { margin-bottom: 0; width: auto; flex: 0 0 auto; }
+  .new-kw-row .ghost-btn { flex: 0 0 auto; white-space: nowrap; }
+
+  .kw-group { margin-bottom: 1.75rem; }
+  .kw-group[hidden] { display: none; }
+  .kw-group-head { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .kw-count { font-size: 11px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .kw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .kw-chip {
+    padding: 6px 12px;
+    background: rgba(220, 200, 255, 0.12);
+    border: 0.5px solid rgba(220, 200, 255, 0.3);
+    border-radius: 14px;
+    font-size: 12px;
+    color: var(--purple);
+    transition: background 0.12s;
+  }
+  .kw-chip:hover { background: rgba(220, 200, 255, 0.28); }
+  .kw-chip[hidden] { display: none; }
+
+  .apps-intro { font-size: 13px; color: var(--text-2); margin-bottom: 1.5rem; max-width: 52ch; line-height: 1.55; }
+  .folders { display: flex; flex-direction: column; gap: 0.75rem; max-width: 680px; }
+  .folder-card {
+    background: rgba(220, 200, 255, 0.1);
+    border: 0.5px solid rgba(220, 200, 255, 0.3);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .folder-head {
+    width: 100%;
+    border: none; background: none; cursor: pointer;
+    padding: 1rem 1.2rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 0.8rem;
+    text-align: left;
+  }
+  .folder-head:hover { background: rgba(220, 200, 255, 0.08); }
+  .folder-ico { width: 40px; height: 32px; display: block; }
+  .folder-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .folder-count { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .folder-chevron { font-size: 12px; color: var(--text-3); transition: transform 0.15s; }
+  .folder-card.open .folder-chevron { transform: rotate(90deg); }
+  .folder-body { display: none; padding: 0 1.2rem 1.2rem 1.2rem; }
+  .folder-card.open .folder-body { display: block; }
+  .folder-edu { font-size: 12.5px; color: var(--text-2); line-height: 1.65; margin-bottom: 0.9rem; }
+  .folder-terms { display: flex; flex-wrap: wrap; gap: 6px; }
+  .folder-more { font-size: 11px; color: var(--text-3); align-self: center; padding: 0 4px; }
+
+  .info-eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+    color: #bbb;
+    margin-bottom: 0.35rem;
+  }
+  .info-note { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 0.5rem; }
+  .info-sources { display: flex; flex-direction: column; gap: 4px; margin-top: 0.4rem; }
+  .info-sources a {
+    font-size: 13px;
+    color: var(--purple);
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 0.5px solid var(--hairline);
+    background: rgba(240, 245, 255, 0.5);
+  }
+  .info-sources a:hover { background: rgba(220, 200, 255, 0.2); }
+  .info-future { font-size: 11px; color: var(--text-3); line-height: 1.5; margin-top: 1rem; }
+
+  /* ---------- Library ---------- */
+  .lib-grid { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.75rem; }
+  .lib-card { width: 120px; position: relative; }
+  .lib-thumb {
+    width: 120px; height: 144px;
+    padding: 0;
+    border-radius: 16px;
+    border: 0.5px solid rgba(200, 210, 230, 0.5);
+    background-color: var(--purple-light-2);
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+    display: block;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .lib-thumb:hover { transform: scale(1.04); box-shadow: 0 8px 24px rgba(107, 75, 166, 0.12); }
+  .lib-title { font-size: 12px; font-weight: 600; color: var(--text); margin-top: 0.4rem; line-height: 1.3; }
+  .lib-meta { font-size: 11px; color: var(--text-3); }
+  .lib-x {
+    position: absolute; top: 6px; right: 6px;
+    width: 20px; height: 20px;
+    border: none; border-radius: 50%;
+    background: rgba(26, 26, 46, 0.55); color: #fff;
+    font-size: 13px; line-height: 20px;
+    cursor: pointer; opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .lib-card:hover .lib-x, .lib-x:focus-visible { opacity: 1; }
+  .lib-empty { font-size: 13px; color: var(--text-3); margin-top: 0.75rem; }
+
+  .upload-drop {
+    margin-top: 0.75rem;
+    border: 1px dashed rgba(220, 200, 255, 0.75);
+    border-radius: 16px;
+    padding: 1.75rem 1.5rem;
+    text-align: center;
+    background: rgba(220, 200, 255, 0.06);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .upload-drop.drag { background: rgba(220, 200, 255, 0.2); border-color: var(--purple-light); }
+  .upload-drop p { font-size: 13px; color: var(--text-2); }
+  .upload-hint { display: block; font-size: 11px; color: var(--text-3); margin-top: 0.35rem; }
+  .link-btn {
+    border: none; background: none; padding: 0;
+    color: var(--purple); font-weight: 600; font-size: 13px;
+    text-decoration: underline; cursor: pointer;
+  }
+  .upload-msg { font-size: 12px; color: #b4462e; margin-top: 0.5rem; min-height: 1em; }
+
+  .sb-media {
+    position: relative;
+    width: 100%;
+    height: 190px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--purple-light-2);
+    border: 0.5px solid var(--hairline);
+    margin-bottom: 1rem;
+  }
+  .sb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .sb-img[hidden] { display: none; } /* belt-and-suspenders: don't rely only on the host page's [hidden] reset */
+  .sb-media .sb-heart {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 2px 10px rgba(26, 26, 46, 0.18);
+  }
+  .sb-media .sb-heart svg { width: 17px; height: 17px; }
+
+  /* ---------- "Cool" rating ---------- */
+  .cool-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .cool-head .lbl { font-weight: 600; color: var(--text-2); }
+  .cool-head .val { font-weight: 600; color: var(--purple); font-variant-numeric: tabular-nums; }
+
+  .sb-cool { margin-bottom: 1.25rem; }
+  .cool-meter { height: 6px; border-radius: 4px; background: rgba(220, 200, 255, 0.2); overflow: hidden; }
+  .cool-meter > i { display: block; height: 100%; background: var(--purple-light); border-radius: 4px; }
+
+  .cool-row { margin-bottom: 0.9rem; }
+  input[type="range"].cool {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 12px;
+    border-radius: 7px;
+    outline: none;
+    cursor: pointer;
+    border: 0.5px solid rgba(220, 200, 255, 0.45);
+    background: linear-gradient(to right,
+      var(--purple-light) 0 var(--fill, 50%),
+      rgba(220, 200, 255, 0.18) var(--fill, 50%) 100%);
+  }
+  input[type="range"].cool::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--purple-light);
+    box-shadow: 0 1px 4px rgba(107, 75, 166, 0.28);
+    cursor: grab;
+  }
+  input[type="range"].cool:active::-webkit-slider-thumb { cursor: grabbing; }
+  input[type="range"].cool::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--purple-light);
+    box-shadow: 0 1px 4px rgba(107, 75, 166, 0.28);
+  }
+  input[type="range"].cool::-moz-range-track { height: 12px; border-radius: 7px; background: rgba(220, 200, 255, 0.18); }
+  input[type="range"].cool::-moz-range-progress { height: 12px; border-radius: 7px; background: var(--purple-light); }
+  input[type="range"].cool:focus-visible { box-shadow: 0 0 0 3px rgba(220, 200, 255, 0.45); }
+
+  .review .cool-line { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .review .cool-line .cool-meter { flex: 1; }
+  .review .cool-line .n {
+    font-size: 11px; color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+    min-width: 32px; text-align: right;
+  }
+
+  /* ---------- Graph / Taste / Education additions ---------- */
+  .ghost-btn {
+    border: 0.5px solid var(--purple-light);
+    background: rgba(220, 200, 255, 0.12);
+    color: var(--purple);
+    font-weight: 600;
+    font-size: 12px;
+    padding: 7px 13px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .ghost-btn:hover { background: rgba(220, 200, 255, 0.28); }
+
+  .head-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+
+  .grid-filter {
+    position: absolute;
+    top: 58px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 8px 5px 12px;
+    border-radius: 14px;
+    border: 0.5px solid var(--purple-light);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    color: var(--purple);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .grid-filter .x { font-size: 15px; opacity: 0.7; }
+  .grid-filter[hidden] { display: none; }
+
+  .fab {
+    position: absolute;
+    z-index: 20;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 0.5px solid var(--hairline);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    color: var(--purple);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(107, 75, 166, 0.14);
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s, color 0.15s;
+  }
+  .fab:hover { transform: scale(1.06); }
+  .fab svg { width: 20px; height: 20px; }
+  .fab-save { right: calc(1.5rem + 60px + 12px); bottom: calc(1.5rem + 7px); }
+  .fab-save.on { color: #e85d8a; background: rgba(255, 213, 229, 0.6); }
+  .fab-save.on svg { fill: #e85d8a; }
+
+  /* quiz */
+  .quiz-card {
+    background: rgba(220, 200, 255, 0.1);
+    border: 0.5px solid rgba(220, 200, 255, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 520px;
+  }
+  .quiz-score { font-size: 12px; color: var(--text-3); margin-bottom: 0.9rem; }
+  .quiz-score b { color: var(--purple); }
+  .quiz-def {
+    font-size: 15px; line-height: 1.6; color: var(--text);
+    margin-bottom: 1.1rem;
+  }
+  .quiz-choices { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-choice {
+    text-align: left;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 0.5px solid rgba(200, 210, 230, 0.5);
+    background: rgba(255, 255, 255, 0.6);
+    font-size: 13px; font-weight: 500; color: var(--text);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .quiz-choice:hover { background: rgba(220, 200, 255, 0.18); }
+  .quiz-choice.correct { background: rgba(213, 255, 229, 0.7); border-color: #8fd9ae; }
+  .quiz-choice.wrong { background: rgba(255, 213, 229, 0.6); border-color: #e8a6bf; }
+  .quiz-choice:disabled { cursor: default; }
+  .quiz-feedback { font-size: 12px; color: var(--text-2); min-height: 1.2em; margin-top: 0.75rem; }
+
+  /* info panel education bits */
+  .info-era { font-size: 12px; color: var(--text-3); font-weight: 600; margin-bottom: 0.5rem; }
+  .info-confused {
+    font-size: 12px; color: var(--text-2); line-height: 1.55;
+    padding: 8px 10px; border-radius: 8px;
+    background: rgba(255, 245, 213, 0.5);
+    border: 0.5px solid rgba(230, 210, 160, 0.5);
+    margin-bottom: 0.25rem;
+  }
+  .info-confused::before { content: "Not to be confused with: "; font-weight: 600; color: var(--text); }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* taste view */
+  .tiny-note { font-size: 12px; color: var(--text-3); margin: 0 0 0.75rem; max-width: 52ch; line-height: 1.5; }
+  .today-card {
+    background: linear-gradient(135deg, rgba(220, 200, 255, 0.22), rgba(213, 245, 255, 0.22));
+    border: 0.5px solid rgba(220, 200, 255, 0.4);
+    border-radius: 16px;
+    padding: 1.25rem 1.4rem;
+    font-size: 13px; color: var(--text-2); line-height: 1.6;
+    margin-bottom: 1.25rem;
+  }
+  .today-card b { color: var(--purple); }
+  .today-card .tlabel { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; color: #bbb; }
+  .today-card a { color: var(--purple); font-weight: 600; text-decoration: none; cursor: pointer; }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 1.25rem; font-size: 13px; color: var(--text-2); }
+  .stat-row b { display: block; font-size: 20px; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .affinity-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
+  .affinity-label { width: 150px; flex: none; color: var(--text-2); }
+  .affinity-track { flex: 1; height: 8px; border-radius: 5px; background: rgba(220, 200, 255, 0.18); overflow: hidden; }
+  .affinity-track > i { display: block; height: 100%; background: var(--purple-light); border-radius: 5px; }
+  .affinity-n { width: 62px; flex: none; text-align: right; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Rank / community reviewing ---------- */
+  .rank-claim {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: rgba(220, 200, 255, 0.14); border: 0.5px solid var(--hairline);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 0.75rem;
+    font-size: 13px; color: var(--text-2);
+  }
+  .rank-claim button {
+    flex: none; background: var(--purple); color: #fff; border: none;
+    border-radius: 10px; padding: 7px 12px; font-size: 12px; font-weight: 600;
+  }
+  .rank-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 0; font-size: 13px;
+    border-bottom: 0.5px solid rgba(200, 210, 230, 0.2);
+  }
+  .rank-row .pos { width: 18px; flex: none; color: var(--text-3); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .rank-row .handle { flex: 1; color: var(--text); font-weight: 500; }
+  .rank-row .count { flex: none; color: var(--purple); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .rank-row.me { background: rgba(220, 200, 255, 0.12); border-radius: 8px; padding-left: 8px; padding-right: 8px; margin: 0 -8px; }
+  .rank-row.rank-sep { color: var(--text-3); justify-content: center; border-bottom: none; padding: 2px 0; }
+  .rank-row.rank-sep .pos { width: auto; }
+  .community-reviews { margin-top: 0.25rem; }
+  .leaderboard-cat { width: auto; max-width: 260px; }
+
+  .handle-modal {
+    position: fixed;
+    top: 50%; left: 50%;
+    width: 360px;
+    max-width: calc(100vw - 2rem);
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 0.5px solid var(--hairline);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 60px rgba(26, 26, 46, 0.2);
+    z-index: 310;
+    opacity: 0;
+    transform: translate(-50%, -46%);
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    display: flex;
+    flex-direction: column;
+  }
+  .handle-modal.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
+  .handle-modal h2 { font-size: 18px; font-weight: 600; color: var(--text); margin: 0.25rem 0 0.5rem; }
+  .handle-modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+  #handleScrim { z-index: 300; }
+
+  .profile-modal { max-height: 80vh; }
+  .profile-reviews { flex: 1; overflow-y: auto; max-height: 320px; }
+
+  .clickable { cursor: pointer; }
+  .clickable:hover { text-decoration: underline; }
+
+  .resonate-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 6px;
+    background: none;
+    border: 0.5px solid var(--hairline);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+  }
+  .resonate-btn svg { width: 13px; height: 13px; }
+  .resonate-btn:not(:disabled):hover { border-color: var(--purple-light); color: var(--purple); }
+  .resonate-btn.on { color: var(--purple); background: rgba(220, 200, 255, 0.18); border-color: var(--purple-light); }
+  .resonate-btn:disabled { cursor: default; opacity: 0.85; }
+
+  .histogram { display: flex; align-items: flex-end; gap: 4px; height: 90px; margin-bottom: 0.5rem; }
+  .histogram .hb { flex: 1; background: var(--purple-light); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
+  .histogram .hb span {
+    position: absolute; bottom: -16px; left: 0; right: 0;
+    text-align: center; font-size: 9px; color: var(--text-3);
+  }
+  .spark { width: 100%; height: 60px; margin-top: 1.25rem; overflow: visible; }
+  .spark polyline { fill: none; stroke: var(--purple); stroke-width: 2; }
+  .spark circle { fill: var(--purple); }
+
+  .compare-box { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; }
+  .compare-tile {
+    width: 150px; height: 150px;
+    border-radius: 16px;
+    border: 0.5px solid rgba(200, 210, 230, 0.5);
+    background-size: cover; background-position: center;
+    cursor: pointer;
+    display: flex; align-items: flex-end;
+    padding: 10px;
+    font-size: 11px; font-weight: 600; color: rgba(26, 26, 46, 0.6);
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .compare-tile:hover { transform: scale(1.04); box-shadow: 0 8px 24px rgba(107, 75, 166, 0.14); }
+  .compare-meta { font-size: 12px; color: var(--text-3); align-self: center; }
+
+  /* sidebar additions */
+  .sb-heart {
+    border: none; background: none; padding: 0;
+    color: var(--text-3); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.15s, transform 0.15s;
+  }
+  .sb-heart svg { width: 22px; height: 22px; }
+  .sb-heart:hover { transform: scale(1.1); }
+  .sb-heart.on { color: #e85d8a; }
+  .sb-heart.on svg { fill: #e85d8a; }
+
+  .sb-tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 0.25rem 0 0.75rem; }
+  .sb-tag {
+    font-size: 11px; padding: 4px 9px; border-radius: 12px;
+    background: rgba(220, 200, 255, 0.16);
+    border: 0.5px solid rgba(220, 200, 255, 0.35);
+    color: var(--purple); cursor: pointer;
+  }
+  .sb-tag.add { background: none; border-style: dashed; }
+  .sb-tag .rm { margin-left: 4px; opacity: 0.6; }
+  .sb-source { font-size: 12px; color: var(--text-3); margin-bottom: 1rem; }
+  .sb-source input {
+    font: inherit; font-size: 12px;
+    border: 0.5px solid rgba(200, 210, 230, 0.5);
+    border-radius: 8px; padding: 5px 8px; width: 100%;
+    background: rgba(240, 245, 255, 0.5); outline: none; margin-top: 3px;
+  }
+  .sb-coll-select {
+    font: inherit; font-size: 12px; font-weight: 600; color: var(--purple);
+    border: 0.5px solid rgba(220, 200, 255, 0.5);
+    border-radius: 8px; padding: 7px 10px; width: 100%;
+    background: rgba(220, 200, 255, 0.1); outline: none;
+    margin-bottom: 1rem; cursor: pointer;
+  }
+
+  /* collections in library */
+  .coll-new { display: flex; gap: 0.6rem; align-items: center; margin: 0.75rem 0 1rem; flex-wrap: wrap; }
+  .coll-item { margin-bottom: 1rem; }
+  .coll-item-head { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .coll-item-head .cname { font-size: 13px; font-weight: 600; color: var(--text); }
+  .coll-item-head .ccount { font-size: 11px; color: var(--text-3); }
+  .coll-item-head .cdel {
+    border: none; background: none; color: var(--text-3);
+    font-size: 12px; cursor: pointer; margin-left: auto;
+  }
+  .coll-item-head .cdel:hover { color: #b4462e; }
+
+  .lib-heart {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-3);
+    opacity: 1;
+    line-height: 18px;
+  }
+  .lib-heart.on { color: #e85d8a; }
+
+  /* ---------- Review sidebar ---------- */
+  .scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 26, 46, 0.12);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    z-index: 200;
+  }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+
+  .sidebar {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 380px;
+    max-width: 90vw;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-left: 0.5px solid var(--hairline);
+    padding: 1.5rem;
+    transform: translateX(400px);
+    transition: transform 0.28s ease;
+    z-index: 210;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .sidebar-close {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--purple);
+  }
+  .sidebar h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0.25rem 0 0.25rem;
+  }
+  .sidebar .artist {
+    font-size: 13px;
+    color: var(--text-3);
+    margin-bottom: 1.5rem;
+  }
+  .review-box {
+    width: 100%;
+    height: 90px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 0.5px solid rgba(200, 210, 230, 0.5);
+    background: rgba(240, 245, 255, 0.5);
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    margin-bottom: 0.75rem;
+  }
+  .review-box:focus { border-color: var(--purple-light); }
+  .submit-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--purple-light);
+    color: var(--purple);
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    margin-bottom: 1rem;
+    transition: opacity 0.15s;
+  }
+  .submit-btn:hover { opacity: 0.9; }
+
+  .reviews {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 12px;
+  }
+  .review {
+    padding: 0.75rem 0;
+    border-bottom: 0.5px solid rgba(200, 210, 230, 0.2);
+  }
+  .review .author { font-weight: 500; color: var(--purple); }
+  .review .time { color: var(--text-3); font-weight: 400; margin-left: 0.4rem; }
+  .review .text { color: var(--text-2); line-height: 1.5; margin-top: 0.25rem; }
+  .reviews .none { color: var(--text-3); padding: 0.75rem 0; }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 640px) {
+    nav { padding: 0 1rem; }
+    .logo { margin-right: 0.75rem; }
+    .nav-link { padding: 6px 10px; font-size: 13px; }
+
+    .sidebar {
+      top: auto;
+      left: 0;
+      width: 100%;
+      max-width: 100%;
+      height: 62vh;
+      border-left: none;
+      border-top: 0.5px solid var(--hairline);
+      border-radius: 16px 16px 0 0;
+      transform: translateY(100%);
+    }
+    .sidebar.open { transform: translateY(0); }
+
+    .home-hint {
+      left: 1rem;
+      right: 1rem;
+      bottom: 6rem;
+      transform: none;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.4;
+    }
+  }
+</style>
+</head>
+<body>
+  <nav>
+    <span class="logo">Vantage</span>
+    <button class="nav-link active" data-view="home">Home</button>
+    <button class="nav-link" data-view="research">Research</button>
+    <button class="nav-link" data-view="library">Your Library</button>
+    <button class="nav-link" data-view="taste">Taste</button>
+    <span class="nav-spacer"></span>
+    <button type="button" class="rank-badge" id="rankBadge" hidden></button>
+  </nav>
+
+  <main>
+    <!-- HOME -->
+    <section class="view active" id="home">
+      <div class="mode-toggle" id="modeToggle">
+        <button class="mode-btn active" data-mode="designs">Designs</button>
+        <button class="mode-btn" data-mode="keywords">Keywords</button>
+      </div>
+
+      <button type="button" class="grid-filter" id="gridFilter" hidden>
+        <span id="gridFilterTerm"></span><span class="x">&times;</span>
+      </button>
+
+      <div class="stage" id="stage"><div id="grid"></div></div>
+      <div class="stage" id="kwStage" hidden><div id="kwPlane"></div></div>
+
+      <div class="focal" id="focal"></div>
+      <div class="home-hint" id="homeHint">Move your cursor to fly the grid &mdash; it follows your direction &middot; click a design to review</div>
+
+      <button type="button" class="fab fab-save" id="focalSave" aria-label="Save the centred design" title="Save the centred design">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20s-7-4.35-9.5-8.5C1 8 2.5 4.5 6 4.5c2.2 0 3.5 1.4 4 2.4.5-1 1.8-2.4 4-2.4 3.5 0 5 3.5 3.5 7C19 15.65 12 20 12 20z"/>
+        </svg>
+      </button>
+
+      <button type="button" class="quick-add" id="quickAdd" aria-label="Quick-add a screenshot or photo" title="Add a screenshot or photo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.1l.9-1.5A1.5 1.5 0 0 1 9.8 3.8h4.4a1.5 1.5 0 0 1 1.3.7L16.4 6h1.1A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z"/>
+          <circle cx="12" cy="12.3" r="3.1"/>
+        </svg>
+      </button>
+    </section>
+
+    <!-- RESEARCH -->
+    <section class="view" id="research">
+      <div class="scroll-view">
+        <div class="research-head">
+          <h1 class="page-heading">Research</h1>
+          <div class="head-actions">
+            <button type="button" class="ghost-btn" id="surpriseBtn">Surprise me</button>
+            <div class="seg" id="researchSeg">
+              <button class="seg-btn active" data-r="styles">Styles</button>
+              <button class="seg-btn" data-r="apps">Applications</button>
+              <button class="seg-btn" data-r="quiz">Quiz</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="rStyles">
+          <div class="new-kw-row">
+            <input type="text" id="newKwTerm" class="search-input" placeholder="Coin a new keyword to describe art&hellip;" maxlength="60" />
+            <select id="newKwCat" class="sb-coll-select"></select>
+            <button type="button" class="ghost-btn" id="newKwAdd">Add keyword</button>
+          </div>
+          <input class="search-input" id="researchSearch" placeholder="Search movements, aesthetics, mediums, techniques&hellip;" />
+          <p class="match-note" id="rMatch"></p>
+          <div id="researchGroups"></div>
+        </div>
+
+        <div id="rApps" hidden>
+          <p class="apps-intro">Every term in the library, filed into a folder. Open one for a short primer on that kind of thing and a sample of what&rsquo;s inside &mdash; tap any term to read its note.</p>
+          <div class="folders" id="folders"></div>
+        </div>
+
+        <div id="rQuiz" hidden>
+          <p class="apps-intro">Read the description, name the style. Pulls from the terms with written notes.</p>
+          <div class="quiz-card">
+            <div class="quiz-score">Score <b id="quizScore">0</b> &nbsp;·&nbsp; Streak <b id="quizStreak">0</b> &nbsp;·&nbsp; <span id="quizSeen">0</span> seen</div>
+            <p class="quiz-def" id="quizDef"></p>
+            <div class="quiz-choices" id="quizChoices"></div>
+            <p class="quiz-feedback" id="quizFeedback"></p>
+            <button type="button" class="submit-btn" id="quizNext" hidden>Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIBRARY -->
+    <section class="view" id="library">
+      <div class="scroll-view">
+        <h1 class="page-heading">Your Library</h1>
+
+        <div class="section-label">Reviewed</div>
+        <div class="lib-grid" id="reviewedGrid"></div>
+
+        <div class="section-label" style="margin-top: 2rem;">Your uploads</div>
+        <div class="upload-drop" id="uploadDrop">
+          <input type="file" id="uploadInput" accept="image/*" multiple hidden />
+          <p>Drop images here, or <button type="button" class="link-btn" id="uploadPick">choose files</button></p>
+          <span class="upload-hint">Screenshots or photos of designs you want to review yourself</span>
+          <div class="upload-msg" id="uploadMsg"></div>
+        </div>
+        <div class="lib-grid" id="uploadsGrid"></div>
+
+        <div class="section-label" style="margin-top: 2rem;">Saved</div>
+        <div class="lib-grid" id="savedGrid"></div>
+
+        <div class="section-label" style="margin-top: 2rem;">Collections</div>
+        <div class="coll-new">
+          <input type="text" id="collName" class="search-input" placeholder="New collection name&hellip;" style="margin:0; max-width:280px;" />
+          <button type="button" class="ghost-btn" id="collAdd">Create</button>
+        </div>
+        <div id="collList"></div>
+      </div>
+    </section>
+
+    <!-- TASTE -->
+    <section class="view" id="taste">
+      <div class="scroll-view">
+        <h1 class="page-heading">Taste</h1>
+
+        <div class="today-card" id="todayCard"></div>
+
+        <div class="stat-row" id="tasteStats"></div>
+
+        <div class="section-label" style="margin-top: 1.75rem;">Top reviewers</div>
+        <p class="tiny-note">Rank is just the number of reviews you've posted — visible to everyone, live.</p>
+        <div id="rankClaim"></div>
+        <select id="leaderboardCat" class="search-input leaderboard-cat" style="margin-bottom: 0.75rem;"></select>
+        <div id="leaderboardList"></div>
+
+        <div class="section-label" style="margin-top: 1.75rem;">Where your taste leans</div>
+        <p class="tiny-note">Average &ldquo;cool&rdquo; score across the designs you&rsquo;ve reviewed, grouped by the kind of style they&rsquo;re tagged with.</p>
+        <div id="affinityBars"></div>
+
+        <div class="section-label" style="margin-top: 1.75rem;">How you rate</div>
+        <div id="coolHistogram" class="histogram"></div>
+        <p class="tiny-note" id="coolSummary"></p>
+        <svg id="coolSpark" class="spark" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"></svg>
+
+        <div class="section-label" style="margin-top: 1.75rem;">Your highest</div>
+        <div class="lib-grid" id="topRated"></div>
+
+        <div class="section-label" style="margin-top: 1.75rem;">Sharpen it &mdash; which is cooler?</div>
+        <div class="compare-box" id="compareBox"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- REVIEW SIDEBAR -->
+  <div class="scrim" id="scrim"></div>
+  <aside class="sidebar" id="sidebar" aria-hidden="true">
+    <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close">&times;</button>
+    <div class="sb-media" id="sbMedia">
+      <img id="sbImg" class="sb-img" alt="" hidden />
+      <button class="sb-heart" id="sbHeart" type="button" aria-label="Save this design" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20s-7-4.35-9.5-8.5C1 8 2.5 4.5 6 4.5c2.2 0 3.5 1.4 4 2.4.5-1 1.8-2.4 4-2.4 3.5 0 5 3.5 3.5 7C19 15.65 12 20 12 20z"/>
+        </svg>
+      </button>
+    </div>
+    <h2 id="sbTitle">Design</h2>
+    <div class="artist" id="sbArtist">by Someone</div>
+    <div class="sb-tags" id="sbTags"></div>
+    <div class="sb-source" id="sbSource"></div>
+    <div class="sb-cool" id="sbCool" hidden>
+      <div class="cool-head"><span class="lbl">Cool</span><span class="val" id="sbCoolVal">&mdash;</span></div>
+      <div class="cool-meter"><i id="sbCoolFill"></i></div>
+    </div>
+    <select id="sbCollSelect" class="sb-coll-select"><option value="">Add to collection&hellip;</option></select>
+    <textarea class="review-box" id="reviewText" placeholder="What's your take?"></textarea>
+    <div class="cool-row">
+      <div class="cool-head"><span class="lbl">How cool is it?</span><span class="val" id="coolVal">50%</span></div>
+      <input type="range" min="0" max="100" step="1" value="50" class="cool" id="coolInput" aria-label="Cool rating, percent" />
+    </div>
+    <button class="submit-btn" id="submitReview">Post review</button>
+    <div class="reviews" id="reviewsList"></div>
+    <div class="community-reviews" id="communityReviews" hidden>
+      <div class="section-label" style="margin-top: 1rem;">Shared with everyone</div>
+      <div class="reviews" id="communityReviewsList"></div>
+    </div>
+  </aside>
+
+  <!-- SIGN-IN MODAL (a display name, not a real account -- see rank badge) -->
+  <div class="scrim" id="handleScrim"></div>
+  <div class="handle-modal" id="handleModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="handleModalTitle">
+    <button class="sidebar-close" id="handleModalClose" type="button" aria-label="Close">&times;</button>
+    <h2 id="handleModalTitle">Sign in to review</h2>
+    <p class="tiny-note" style="margin-bottom: 1rem;">Pick a name — it's shown next to your reviews and tracks your rank against everyone else here. No password: it's just a name, stored in this browser.</p>
+    <input type="text" id="handleModalInput" class="search-input" maxlength="24" placeholder="Your name" autocomplete="off" />
+    <div class="handle-modal-actions">
+      <button type="button" class="ghost-btn" id="handleModalCancel">Maybe later</button>
+      <button type="button" class="submit-btn" id="handleModalSubmit" style="margin-bottom:0;">Continue</button>
+    </div>
+  </div>
+
+  <!-- REVIEWER PROFILE PANEL -->
+  <div class="handle-modal profile-modal" id="profileModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="profileModalTitle">
+    <button class="sidebar-close" id="profileModalClose" type="button" aria-label="Close">&times;</button>
+    <h2 id="profileModalTitle">Reviewer</h2>
+    <p class="tiny-note" id="profileModalMeta" style="margin-bottom: 0.75rem;"></p>
+    <div class="reviews profile-reviews" id="profileModalReviews"></div>
+  </div>
+
+  <!-- KEYWORD INFO PANEL -->
+  <aside class="sidebar" id="infoPanel" aria-hidden="true">
+    <button class="sidebar-close" id="infoClose" aria-label="Close">&times;</button>
+    <div class="info-eyebrow" id="infoCat">Style</div>
+    <h2 id="infoTerm">Term</h2>
+    <div class="info-era" id="infoEra" hidden></div>
+    <p class="info-note" id="infoNote"></p>
+    <p class="info-confused" id="infoConfused" hidden></p>
+
+    <div class="section-label" style="margin: 1.1rem 0 0.4rem;">Related styles</div>
+    <div class="chip-row" id="infoRelated"></div>
+
+    <div class="section-label" style="margin: 1.1rem 0 0.4rem;" id="infoDesignsLabel">Designs in this style</div>
+    <div class="lib-grid" id="infoDesigns"></div>
+    <button type="button" class="ghost-btn" id="infoExplore">Explore in the grid &rarr;</button>
+
+    <div class="section-label" style="margin: 1.25rem 0 0.4rem;">Reference links</div>
+    <div class="info-sources" id="infoSources"></div>
+    <p class="info-future">Full source extraction &mdash; pulling summaries and citations straight from the web &mdash; arrives once Research is connected. For now these open the best existing references for this term.</p>
+  </aside>
+
+  <input type="file" id="quickInput" accept="image/*" multiple hidden />
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- Real backend (Supabase) ----------------
+     Replaces the Claude-Artifact-only, org-restricted `db` capability with a
+     real public Postgres database + realtime, so this works as a standalone
+     site for anyone. Project URL + the publishable key are meant to be used
+     right here in client-side code -- see the SQL schema doc for the RLS
+     policies that keep this safe with no secret key involved. */
+  var SUPABASE_URL = "https://yowtkslnjubganczotot.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_WSHAhH9gHi_sS2rnXo3Zeg_STJfV-yI";
+  var sb = (window.supabase && typeof window.supabase.createClient === "function")
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+    : null;
+
+  /* ---------------- Data ---------------- */
+  var PASTELS = ["#ffd5e5", "#e5d5ff", "#d5f5ff", "#fff5d5", "#d5ffe5", "#ffe5d5"];
+
+  // Schema: title, artist, source (site name, e.g. "Dribbble"), sourceUrl
+  // (link to the piece, optional), img (a direct image URL, optional --
+  // without one the tile just falls back to a flat color block), keywords.
+  // Populated from the Met Museum's Open Access API (public domain, real
+  // works, real direct image URLs) -- a real starter set so the grid isn't
+  // just 6 repeating placeholders. Swap in your own hand-picked list the
+  // same shape whenever you're ready.
+  var BASE_DESIGNS = [
+    { title: "The Organ Rehearsal", artist: "Henry Lerolle", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/436880",
+      img: "https://images.metmuseum.org/CRDImages/ep/original/DP160223.jpg",
+      keywords: ["Impressionism", "Oil Paint", "Realism"] },
+    { title: "By the Seashore", artist: "Auguste Renoir", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/437430",
+      img: "https://images.metmuseum.org/CRDImages/ep/original/DP-14936-039.jpg",
+      keywords: ["Impressionism", "Oil Paint", "Seascape", "Portrait"] },
+    { title: "The Shepherd's Song", artist: "Pierre Puvis de Chavannes", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/437344",
+      img: "https://images.metmuseum.org/CRDImages/ep/original/DP-14201-001.jpg",
+      keywords: ["Symbolism", "Oil Paint", "Pastoral", "Academic"] },
+    { title: "Shiraito Waterfall at Hakone", artist: "Utagawa Hiroshige", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/40336",
+      img: "https://images.metmuseum.org/CRDImages/as/original/4080.jpg",
+      keywords: ["Japanese", "Landscape", "Naturalism"] },
+    { title: "Okita of the Naniwa-ya Tea-house", artist: "Kitagawa Utamaro", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/55867",
+      img: "https://images.metmuseum.org/CRDImages/as/original/DP141282.jpg",
+      keywords: ["Japanese", "Woodcut", "Portrait"] },
+    { title: "Ema (Votive Painting) of a Chinese Lion and Peony Tree", artist: "Unknown", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/36108",
+      img: "https://images.metmuseum.org/CRDImages/as/original/LC-1975_268_139_cc-001.jpg",
+      keywords: ["Japanese", "Religious"] },
+    { title: "Still Life with Flowers and Fruit", artist: "Henri Fantin-Latour", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/436293",
+      img: "https://images.metmuseum.org/CRDImages/ep/original/DT1980.jpg",
+      keywords: ["Still Life", "Oil Paint", "Realism"] },
+    { title: "Still Life with Flowers and Prickly Pears", artist: "Auguste Renoir", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/441104",
+      img: "https://images.metmuseum.org/CRDImages/ep/original/DP257756.jpg",
+      keywords: ["Still Life", "Impressionism", "Oil Paint"] },
+    { title: "Still Life", artist: "Fidelia Bridges", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/898372",
+      img: "https://images.metmuseum.org/CRDImages/ad/original/DP-29793-001.jpg",
+      keywords: ["Still Life", "Oil Paint", "American"] },
+    { title: "Self-Portrait", artist: "Rembrandt", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/437397",
+      img: "https://images.metmuseum.org/CRDImages/ep/original/DP-16323-001.jpg",
+      keywords: ["Baroque", "Oil Paint", "Self Portrait", "Portrait"] },
+    { title: "Ferdinando de' Medici, Grand Prince of Tuscany", artist: "Giovanni Battista Foggini", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/208149",
+      img: "https://images.metmuseum.org/CRDImages/es/original/DP248871.jpg",
+      keywords: ["Baroque", "Marble", "Bust", "Portrait"] },
+    { title: "Cardinal Scipione Borghese", artist: "Giuliano Finelli", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/201593",
+      img: "https://images.metmuseum.org/CRDImages/es/original/DP249585.jpg",
+      keywords: ["Baroque", "Marble", "Bust", "Portrait"] },
+    { title: "Bronze Basin with Six Legs", artist: "Unknown (Etruscan)", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/254797",
+      img: "https://images.metmuseum.org/CRDImages/gr/original/DP119625.jpg",
+      keywords: ["Ancient", "Bronze"] },
+    { title: "Marble Statue of a Kouros (Youth)", artist: "Unknown (Greek, Attic)", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/253370",
+      img: "https://images.metmuseum.org/CRDImages/gr/original/DP-23263-005.jpg",
+      keywords: ["Ancient", "Classical", "Marble", "Figurative"] },
+    { title: "Geometric Gold Weight", artist: "Akan artist", source: "The Met",
+      sourceUrl: "https://www.metmuseum.org/art/collection/search/317675",
+      img: "https://images.metmuseum.org/CRDImages/ao/original/DP102136.jpg",
+      keywords: ["Geometric", "African", "Brass", "Miniature"] }
+  ];
+
+  // Art-keyword bank -- categories flattened, de-duped, and shuffled for the infinite grid
+  var ART_KEYWORDS = {
+    "yourKeywords": [],
+    "classicMovements": ["Impressionism","Post-Impressionism","Cubism","Surrealism","Abstract Expressionism","Minimalism","Pop Art","Futurism","Dada","Bauhaus","Art Deco","Art Nouveau","Romanticism","Neoclassicism","Baroque","Renaissance","Medieval","Byzantine","Expressionism","Fauvism","Constructivism","De Stijl","Precisionism","Orphism","Vorticism","Suprematism","Metaphysical Art","Kinetic Art","Op Art","Fluxus","Deco","Art Moderne","Arts and Crafts","Neorealism","Pointillism","Divisionism","Symbolism","Decadence","Aesthetic Movement"],
+    "contemporaryStyles": ["Contemporary","Modern","Neo-Expressionism","Postmodernism","Transavantgarde","Street Art","Graffiti","Digital Art","Generative Art","AI Art","Net Art","Installation Art","Land Art","Environmental Art","Performance Art","Conceptual Art","Institutional Critique","Identity Politics Art","Ecological Art","Bio-Art","New Media Art","Cyber Art","Internet Art","Web-based Art","Participatory Art","Relational Art","Social Practice Art","Community Art","Public Art","Temporary Art","Ephemeral Art","Somaesthetic Art"],
+    "aesthetics": ["Cyberpunk","Vaporwave","Y2K","Synthwave","Steampunk","Solarpunk","Lunarpunk","Silkpunk","Dieselpunk","Cottagecore","Seapunk","Biopunk","Glitchcore","Glitch Art","Retrowave","Outrun","Brutalism","Maximalism","Chaos Core","Coquette","Goth","Rocococore","Neotwee","Goblincore","Witchcore","Darkcore","Eccentric","Weirdcore","Dreamcore","Acid","Psychedelic","Tripendicular","Indie Sleaze","Holosexual","Neofuturism","Dark Academia","Light Academia","Blokecore","Softcore","Royalcore","Honeycore","Beachcore","Desertcore","Mountaincore","Forestcore","Farmcore","Streetwear Aesthetic","Grunge","Glam","Kitsch","Camp","Geek Chic","Urban Jungle","Minimalist Chic","Maximalist Chic","Avant-Garde","Underground","Alternative","Indie","Mainstream","Kitschwave","Vaporwave Adjacent","Holonomy","Hauntology"],
+    "mediums": ["Oil Paint","Acrylic","Watercolor","Tempera","Gouache","Ink","Fresco","Egg Tempera","Lacquer","Enamel","Graphite","Charcoal","Pastel","Oil Pastel","Colored Pencil","Crayon","Marker","Ballpoint Pen","Fountain Pen","Brush Pen","Felt Tip","Clay","Ceramics","Porcelain","Stoneware","Earthenware","Stone","Wood","Metal","Brass","Bronze","Iron","Steel","Aluminum","Copper","Silver","Gold","Marble","Granite","Limestone","Slate","Sandstone","Jade","Soapstone","Rubber","Resin","Epoxy","Polyurethane","Plastic","Polymer Clay","Glass","Blown Glass","Fused Glass","Mosaic","Stained Glass","Fiber Optics","Neon","LED Light","Holographic Material","Reflective Material","Glow-in-the-Dark","Phosphorescent","Paper","Handmade Paper","Canvas","Linen","Silk","Velvet","Burlap","Vellum","Parchment","Papyrus","Rice Paper","Washi","Japanese Paper","Lace","Muslin","Cotton","Wool","Hemp","Linen Fabric","Leather","Suede","Fur","Feathers","Hair","Fibers","Collage","Found Objects","Assemblage","Mixed Media","Textiles","Fiber Art","Embroidery","Needlework","Tapestry","Quilting","Photography","Black and White Photography","Color Photography","Film Photography","Digital Photography","Polaroid","Daguerreotype","Cyanotype","Photogram","Photomontage","Digital","Digital Painting","3D Modeling","Vector Art","Raster Art","Pixel Art","ASCII Art","Voxel Art","Polygon Art","Wireframe Art","Line Art","Video","Video Art","Animation","Stop Motion","Claymation","2D Animation","3D Animation","Motion Graphics","Augmented Reality","Virtual Reality","Mixed Reality","Extended Reality","Holography","Laser Art","Projection Mapping","Light Installation","Sound Art","Audio Art","Sonic Sculpture","Performance Art","Live Art","Body Art","Bio-Art","Bio-Digital","Generative Art","Algorithmic Art","Machine Learning","Neural Network","AI Generated","Procedural Art","Fractals","Parametric Art","Data Visualization","Information Art"],
+    "techniques": ["Glazing","Impasto","Scumbling","Pointillism","Stippling","Dry Brush","Wet on Wet","Underpainting","Overpainting","Chiaroscuro","Sfumato","Fumage","Cross Hatching","Contour Drawing","Gesture Drawing","Value Study","Color Blocking","Glazing Technique","Layering","Blending","Splattering","Dripping","Pouring","Stenciling","Masking","Tape Resist","Wax Resist","Batik","Shibori","Tie Dye","Screen Printing","Silkscreen","Relief Printing","Woodcut","Linocut","Engraving","Etching","Drypoint","Mezzotint","Aquatint","Intaglio","Lithography","Offset Printing","Flexography","Gravure","Letterpress","Embossing","Foil Stamping","Thermography","Casting","Carving","Modeling","Coiling","Hand-building","Wheel Throwing","Slab Building","Welding","Soldering","Brazing","Forging","Patination","Oxidation","Electroplating","Repoussé","Chasing","Granulation","Filigree","Enameling","Cloisonné","Champlevé","Plique-à-jour","Weaving","Knitting","Crochet","Macramé","Lace Making","Bobbin Lace","Needlelace","Tatting","Embroidery","Cross Stitch","Gros Point","Petit Point","Crewelwork","Silk Painting","Batik","Shibori","Tie Dye","Block Printing","Hand Painting","Quilting","Patchwork","Trapunto","Appliqué","Collage","Decoupage","Assemblage","Photomontage","Photo Collage","Digital Collage","Digital Manipulation","Photo Retouching","Photoshopping","Compositing","Blending","Masking","Color Grading","Rendering","Ray Tracing","Path Tracing","Procedural Generation","Generative Algorithm","Machine Learning Model","Neural Style Transfer","GANs","Diffusion Model","Scripting","Coding","Shader Programming","Particle Systems","Physics Simulation","Fluid Simulation","Cloth Simulation","Chromolithography","Cyanotype","Daguerreotype","Solarization","Sabattier Effect","Toning","Sepia Toning","Tinting","Colorization","Alternate Process Photography","Gum Bichromate","Oil Transfer","Carbro Color","Polaroid Transfer","Image Transfer","Light Painting","Long Exposure","Multiple Exposure","Intentional Camera Movement","Lens Flare","Double Exposure"],
+    "subjects": ["Abstract","Landscape","Portrait","Self Portrait","Still Life","Genre","Historical","Narrative","Religious","Mythological","Allegorical","Figurative","Figure Study","Nude","Botanical","Floral","Zoological","Animal","Wildlife","Anatomical","Architectural","Industrial","Urban","Rural","Seascape","Cityscape","Skyscape","Cloudscape","Waterscape","Food Photography","Food Art","Still Life Food","Fashion Photography","Fashion Illustration","Documentary","Photo Essay","Fine Art Photography","Conceptual Photography","Surreal","Surrealistic","Grotesque","Romantic","Pastoral","Idyllic","Dystopian","Apocalyptic","Utopian","Fantasy","Science Fiction","Horror","Dark Fantasy","Gothic","Erotica","Erotic Art","Political Art","Protest Art","Activist Art","Feminist Art","Queer Art","LGBTQ+ Art","Indigenous Art","Diaspora Art","Postcolonial Art","Contemporary","Minimalist","Maximalist","Geometric Abstraction","Organic Abstraction","Expressionistic","Impressionistic","Cubistic","Futuristic","Retro","Vintage","Steampunk","Cyberpunk","Vaporwave"],
+    "digitalTrends": ["Generative Art","AI-Generated","AI Art","Algorithmic Art","Procedural Art","3D Rendering","Real-time Rendering","Ray Tracing","Path Tracing","Voxel Art","Polygon Art","Low Poly","High Poly","Motion Capture","Virtual Production","Metaverse Art","NFT","Blockchain Art","Crypto Art","Smart Contract Art","Interactive Art","Immersive Experience","VR Art","AR Art","XR Experience","Haptic Art","Sensory Art","Multisensory","Data Visualization","Information Art","Bio-feedback Art","Neural Art","Brain-Computer Interface Art","Sound Visualization","Generative Music","Live Coding","Processing Art","p5.js","Shader Art","WebGL Art","Web Art","Code Art","Creative Coding","Demoscene","Glitch Art","Error Art","Databending","Signal Corruption","Codec Corruption","Video Glitch","Image Glitch","3D Art","3D Modeling","3D Sculpting","3D Animation","Character Design","Environment Design","Concept Art","Digital Painting","Digital Illustration","Vector Art","Vector Illustration","Raster Art","Pixel Art","Pixelated","ASCII Art","ASCII Animation","Retro Game Art","Game Art","Game Design","UI Art","UX Art","Motion Graphics","Animation","2D Animation","3D Animation","Stop Motion","Claymation","Rotoscope","Cel Animation","Rotoscoped Animation","Live Action Animation","Kinetic Typography","Type Animation","Explainer Animation","Whiteboard Animation","Puppet Animation"],
+    "characteristics": ["Realism","Photorealism","Hyperrealism","Naturalism","Impressionistic","Expressionistic","Symbolism","Romanticism","Classicism","Academic","Classical Training","Avant-Garde","Experimental","Underground","Independent","Maximalist","Minimalist","Ornate","Sparse","Dense","Open","Busy","Quiet","Loud","Geometric","Organic","Symmetrical","Asymmetrical","Balanced","Unbalanced","Chaotic","Ordered","Structured","Unstructured","Monochromatic","Polychromatic","High Contrast","Low Contrast","Pastel","Saturated","Desaturated","Muted","Vivid","Bright","Dark","Luminous","Matte","Glossy","Textured","Smooth","Rough","Detailed","Intricate","Simple","Complex","Layered","Flat","3D","Dimensional","Abstract","Representational","Non-Representational","Figurative","Non-Figurative","Objective","Subjective","Literal","Conceptual","Decorative","Functional","Pure","Impure","Clean","Dirty","Polished","Rough","Refined","Raw","Finished","Unfinished","Fragmentary","Complete","Whole","Partial","Gestural","Controlled","Spontaneous","Deliberate","Accidental","Intentional","Unintentional","Playful","Serious","Humorous","Somber","Whimsical","Austere","Opulent","Minimalist Aesthetic","Maximalist Aesthetic"],
+    "culturalContexts": ["Western","Eastern","African","Indigenous","Native American","First Nations","Aboriginal Australian","Oceanic","Pacific Islander","Asian","East Asian","Japanese","Chinese","Korean","South Asian","Indian","Pakistani","Bangladeshi","Sri Lankan","Southeast Asian","Thai","Vietnamese","Indonesian","Filipino","Middle Eastern","Persian","Arabic","Turkish","European","Northern European","Southern European","Eastern European","Central European","Mediterranean","American","North American","Latin American","Central American","Caribbean","South American","Andean","Amazonian","Mesoamerican","Aztec","Mayan","Inca","Pre-Columbian","Ancient","Classical","Hellenistic","Roman","Byzantine","Islamic Medieval","African Diaspora","Diaspora","Hybrid","Cross-cultural","Multicultural","Postcolonial","Decolonial","Global","Localized","Regional","Transnational","Transatlantic","Pan-African","Pan-Asian","Afro-Caribbean","Afro-Brazilian","Chicano","Latino","Latinx","Asian-American","Asian-Pacific","African-American","Black British","Indigenous Canadian","First Nations","Samoan","Hawaiian","Māori","Jewish","Christian","Islamic","Buddhist","Hindu","Sikh","Indigenous Spirituality"],
+    "socialThemes": ["Identity","Gender","Gender Expression","Gender Identity","Masculinity","Femininity","Non-Binary","Race","Ethnicity","Racism","Anti-racism","Colonialism","Decolonization","Imperialism","Nationalism","Internationalism","Sexuality","Sexual Identity","Queer","LGBTQ+","Gay","Lesbian","Bisexual","Transgender","Non-Binary Gender","Intersex","Asexual","Disability","Accessibility","Ableism","Chronic Illness","Mental Health","Neurodiversity","Autism","ADHD","Dyslexia","Class","Socioeconomic Status","Poverty","Wealth","Inequality","Labor","Workers Rights","Exploitation","Immigration","Migration","Refugee","Diaspora","Displacement","Homelessness","Gentrification","Urban Development","Land Rights","Water Rights","Food Justice","Colonialism","Resistance","Rebellion","Revolution","Activism","Protest","Civil Rights","Human Rights","Justice","Equity","Equality","Inclusion","Exclusion","Othering","Discrimination","Bias","Prejudice","Violence","War","Conflict","Peace","Resolution","Reconciliation","Trauma","Healing","Recovery","Survival","Resilience","Memory","History","Heritage","Tradition","Cultural Preservation","Loss","Grief","Mourning","Death","Mortality","Impermanence","Time","Aging","Generational","Intergenerational","Family","Community","Connection","Isolation","Loneliness","Belonging","Home","Displacement","Diaspora","Relationships","Love","Desire","Intimacy","Joy","Happiness","Hope","Despair","Anxiety","Fear","Courage","Vulnerability","Shame","Pride","Self-Worth","Self-Discovery","Growth","Transformation","Change","Acceptance","Authenticity","Performance","Masking","Authenticity","Truth","Deception","Reality","Fiction","Imagination","Dreams","Nightmares","Spirituality","Religion","Secularism","Atheism","Agnosticism","Belief","Faith","Doubt","Certainty","Uncertainty","Knowledge","Wisdom","Ignorance","Technology","Progress","Innovation","Futurism","Obsolescence","Digital Divide","Artificial Intelligence","Automation","Labor Displacement","Transhumanism","Posthumanism","Environment","Ecology","Climate Crisis","Climate Change","Sustainability","Environmentalism","Conservation","Pollution","Extraction","Resource Depletion","Biodiversity","Extinction","Animal Rights","Veganism","Food Systems","Agriculture","Urban Farming","Consumption","Consumerism","Materialism","Minimalism","Minimalist Living","Capitalism","Socialism","Communism","Anarchism","Libertarianism","Feminism","Intersectional Feminism","Masculinity","Toxic Masculinity","Patriarchy","Misogyny","Sexism","Reproductive Rights","Bodily Autonomy","Consent","Sexual Assault","Harassment","Abuse","Domestic Violence","Child Abuse","Exploitation","Human Trafficking","Modern Slavery","Addiction","Mental Health Crisis","Suicide","Self-Harm","Eating Disorders","Body Image","Beauty Standards","Cosmetic Surgery","Bodily Autonomy","Disabilities","Accessibility","Design Justice","Data Privacy","Surveillance","Big Brother","Totalitarianism","Authoritarianism","Democracy","Participation","Civic Engagement","Political Participation","Voting Rights","Representation","Tokenism","Erasure","Invisibility","Visibility","Voice","Silencing","Free Speech","Censorship"],
+    "printMethods": ["Screen Printing","Silkscreen","Serigraphy","Relief Printing","Woodcut","Linocut","Linoleum Cut","Wood Engraving","Engraving","Etching","Dry Point","Soft Ground Etching","Hard Ground Etching","Needle Point","Burr","Mezzotint","Aquatint","Spitbite","Sugar Lift","Photogravure","Heliogravure","Intaglio","Lithography","Lithographic Crayon","Lithographic Ink","Offset Lithography","Offset Printing","Flexography","Rotogravure","Gravure","Rotary Gravure","Letterpress","Letterpress Printing","Embossing","Blind Embossing","Foil Stamping","Hot Foil Stamping","Thermography","Die Cutting","Digital Printing","Giclée","Giclee Print","Inkjet Printing","Laser Printing","3D Printing","Photocopying","Photolithography","Photo Etching","Photo Screen Printing","Halftone","Monoprinting","Monotype","Relief Etching","Copper Plate Printing","Steel Plate Printing","Zinc Plate Printing"],
+    "sculptureTypes": ["Freestanding","Freestanding Sculpture","Bas Relief","Low Relief","High Relief","High Relief Sculpture","Sunken Relief","Intaglio Relief","Round","Sculpture in the Round","Subtractive Sculpture","Additive Sculpture","Carving","Modeling","Assemblage","Assemblage Art","Found Object Sculpture","Junk Sculpture","Mobile","Alexander Calder Mobile","Hanging Mobile","Stabile","Kinetic Sculpture","Kinetic Art","Moving Sculpture","Abstract Sculpture","Abstract Expressionist Sculpture","Figurative Sculpture","Minimalist Sculpture","Environmental Sculpture","Site-Specific Sculpture","Land Art","Earth Art","Installation","Installation Art","Immersive Installation","Interactive Installation","Public Art","Public Sculpture","Monument","Monumental Sculpture","Memorial","Memorial Sculpture","Statue","Bust","Head Sculpture","Torso","Fragment","Fragmentary Sculpture","Colossal","Monumental","Life-Size","Oversized","Miniature","Miniature Sculpture","Micro Sculpture","Relief Sculpture","Wall-Mounted","Free-Standing","Suspended","Floating","Gravity-Defying","Ephemeral Sculpture","Temporary Sculpture","Ice Sculpture","Snow Sculpture","Sand Sculpture","Soap Sculpture","Foam Sculpture","Balloon Sculpture","Paper Sculpture","Cardboard Sculpture","Wood Sculpture","Stone Sculpture","Metal Sculpture","Bronze Sculpture","Iron Sculpture","Steel Sculpture","Aluminum Sculpture","Copper Sculpture","Silver Sculpture","Gold Sculpture","Ceramic Sculpture","Clay Sculpture","Porcelain Sculpture","Glass Sculpture","Plastic Sculpture","Resin Sculpture","Composite Sculpture","Mixed Media Sculpture"],
+    "timePeriods": ["Ancient","Ancient Egypt","Ancient Greece","Ancient Rome","Ancient China","Ancient India","Ancient Mesoamerica","Prehistoric","Paleolithic","Neolithic","Bronze Age","Iron Age","Classical Antiquity","Medieval","Early Medieval","High Medieval","Late Medieval","Byzantine","Islamic Medieval","Renaissance","Italian Renaissance","Northern Renaissance","Early Renaissance","High Renaissance","Late Renaissance","Baroque","Early Baroque","High Baroque","Late Baroque","Rococo","Neoclassical","Neoclassicism","Romantic","Romanticism","Romantic Period","Victorian","Victorian Era","Impressionist Era","Post-Impressionist Era","Belle Époque","Fin de Siècle","Art Nouveau Period","Art Deco Period","Modernist Period","Modernism","Early Modernism","High Modernism","Postwar Period","Post-War","Cold War Era","Modern Era","Contemporary","Contemporary Era","20th Century","21st Century","1900s","1910s","1920s","1930s","1940s","1950s","1960s","1970s","1980s","1990s","2000s","2010s","2020s","Pre-Columbian","Hellenistic","Regency Era","Edwardian Era","Arts and Crafts Era","Aestheticism","Decadence","Symbolist Period","Fauvism Period","Expressionism Period","Cubism Period","Surrealism Period","Dadaism Period","Futurism Period","Constructivism Period","De Stijl Period","Bauhaus Period","Abstract Expressionism Period","Pop Art Era","Minimalism Period","Conceptual Art Era","Digital Age","Information Age","Internet Era","Post-Internet Era","Web 2.0 Era","AI Era","Anthropocene","Post-Human","Gig Economy Era","Social Media Era"]
+  };
+  var KEYWORDS = Array.from(new Set(Object.values(ART_KEYWORDS).flat()))
+    .sort(function () { return Math.random() - 0.5; });
+
+  /* Research metadata: a label + "what this group is" per category, curated
+     notes for well-known terms, and a per-keyword set of reference URLs.
+     The URL shape is the seam for later: when Research is wired to the web,
+     refLinks() becomes a fetch that returns real extracted sources. */
+  var CATEGORY_META = {
+    yourKeywords:       { label: "Your Keywords",               blurb: "a term you coined yourself to describe art" },
+    classicMovements:   { label: "Classic Movements",          blurb: "a recognised movement in art history" },
+    contemporaryStyles: { label: "Contemporary Styles",        blurb: "a current or recent mode of art practice" },
+    aesthetics:         { label: "Aesthetics",                 blurb: "a visual mood, subculture, or “look”" },
+    mediums:            { label: "Mediums & Materials",        blurb: "a material or medium the work is made with" },
+    techniques:         { label: "Techniques",                 blurb: "a hands-on method of making or finishing" },
+    subjects:           { label: "Subjects & Genres",          blurb: "what the work depicts, or the genre it sits in" },
+    digitalTrends:      { label: "Digital & New Media",        blurb: "a digital, computational, or networked practice" },
+    characteristics:    { label: "Visual Characteristics",     blurb: "a formal quality you can point to in the work" },
+    culturalContexts:   { label: "Cultural Contexts",          blurb: "a cultural tradition the work speaks from" },
+    socialThemes:       { label: "Social & Conceptual Themes", blurb: "an idea or issue the work engages" },
+    printMethods:       { label: "Printmaking",                blurb: "a process for producing printed images" },
+    sculptureTypes:     { label: "Sculpture",                  blurb: "a form or approach to three-dimensional work" },
+    timePeriods:        { label: "Time Periods",               blurb: "an era art historians name" }
+  };
+
+  var KEYWORD_NOTES = {
+    "Minimalism": "Pares a work down to essentials — simple form, flat colour, lots of empty space — so what stays carries all the weight.",
+    "Maximalism": "The opposite instinct: more pattern, more colour, more layers, on the belief that abundance is its own kind of order.",
+    "Surrealism": "Puts unrelated things together to unsettle the everyday — dream logic, impossible scenes, the uncanny.",
+    "Cubism": "Breaks a subject into facets and shows several viewpoints at once on one flat surface.",
+    "Impressionism": "Loose, visible brushwork chasing changing light and colour rather than fine detail.",
+    "Bauhaus": "German school (1919–1933) fusing craft, industry, and art — function first, geometry, primary colour.",
+    "Brutalism": "Raw material shown honestly — bare concrete, blunt mass, no decoration; revived now as a deliberately harsh digital style.",
+    "Art Deco": "1920s–30s glamour: symmetry, bold geometry, metallic sheen, streamlined luxury.",
+    "Art Nouveau": "Turn-of-the-century style built on whiplash curves drawn from plants and flowing hair.",
+    "Pop Art": "Takes imagery from advertising, comics, and packaging and hands it back as fine art.",
+    "Abstract Expressionism": "Post-war painting driven by gesture and scale — the act of painting made visible.",
+    "Futurism": "Early-1900s movement in love with speed, machines, and motion.",
+    "Constructivism": "Russian avant-garde treating art as construction — diagonal geometry and photomontage in service of a message.",
+    "Typography": "Design made from letterforms — how type is drawn, spaced, and set carries the meaning.",
+    "Photography": "Making images with light and a lens; as a medium it runs from documentary fact to staged fiction.",
+    "Cyberpunk": "“High tech, low life” — neon, rain, dense cities, bodies merged with machines.",
+    "Vaporwave": "2010s net aesthetic: pastel gradients, chrome, 80s–90s mall nostalgia, glitch.",
+    "Steampunk": "Retro-futurism powered by brass, gears, and steam — the future as imagined in the 1800s.",
+    "Solarpunk": "Optimistic eco-futurism: greenery, sunlight, community, technology in balance with nature.",
+    "Glitch Art": "Uses digital error — corrupted files, datamoshing, signal noise — as the material itself.",
+    "Generative Art": "The artist writes a system or algorithm; the work is what the system produces.",
+    "Collage": "Assembles a new image from cut and pasted fragments of other images or materials.",
+    "Chiaroscuro": "Strong contrast of light and dark to model form and stage drama.",
+    "Impasto": "Paint laid on thick enough to hold brush- or knife-marks and catch real light.",
+    "Pointillism": "Builds an image from small distinct dots of colour that blend in the viewer’s eye.",
+    "Screen Printing": "Ink pushed through a stencilled mesh screen; flat bold colour, easy to repeat.",
+    "Etching": "Lines bitten into a metal plate with acid, then inked and pressed onto paper.",
+    "Lithography": "Printing from a flat stone or plate using the resistance of grease and water.",
+    "Woodcut": "The oldest relief print — cut away the block, ink what’s left, press.",
+    "Land Art": "Made in and from the landscape itself, often remote and slowly reclaimed by it.",
+    "Installation Art": "Work you enter rather than look at — a whole space arranged as the piece.",
+    "Performance Art": "The artist’s live action, in front of an audience, is the work.",
+    "Conceptual Art": "The idea matters more than the object — sometimes there is barely an object at all.",
+    "Realism": "Depicting ordinary life and appearance without idealising it.",
+    "Photorealism": "Painting or drawing that mimics a photograph down to the smallest detail.",
+    "Geometric": "Form built from clean straight edges, circles, and grids rather than organic curves.",
+    "Organic": "Shapes that echo nature — irregular, flowing, hand-made.",
+    "Retro": "Deliberately revives the look of an earlier decade.",
+    "Abstract": "Non-representational — colour, shape, and mark stand on their own, not as a picture of something."
+  };
+
+  // term -> its first-seen category key
+  var TERM_CATEGORY = {};
+  Object.keys(ART_KEYWORDS).forEach(function (cat) {
+    ART_KEYWORDS[cat].forEach(function (term) {
+      if (!(term in TERM_CATEGORY)) TERM_CATEGORY[term] = cat;
+    });
+  });
+
+  function keywordNote(term) {
+    if (KEYWORD_NOTES[term]) return KEYWORD_NOTES[term];
+    var cat = TERM_CATEGORY[term];
+    var b = cat && CATEGORY_META[cat] ? CATEGORY_META[cat].blurb : "a term in the art-keyword library";
+    return term + " — " + b + ". A fuller, sourced summary will land here once Research can read the web.";
+  }
+
+  // Education layer: hand-authored context for the well-known terms.
+  var ERA = {
+    "Impressionism": "1860s–1880s, France", "Post-Impressionism": "1880s–1900s, France",
+    "Cubism": "1907–1920s, Paris", "Futurism": "1909–1918, Italy", "Dada": "1916–1924",
+    "Surrealism": "1924–1950s", "Bauhaus": "1919–1933, Germany", "De Stijl": "1917–1931, Netherlands",
+    "Constructivism": "1915–1930s, Russia", "Suprematism": "1913–1920s, Russia",
+    "Art Nouveau": "c. 1890–1910", "Art Deco": "1920s–1930s", "Abstract Expressionism": "1940s–1950s, New York",
+    "Pop Art": "1950s–1960s, UK & US", "Minimalism": "1960s–1970s", "Op Art": "1960s",
+    "Fluxus": "1960s–1970s", "Baroque": "c. 1600–1750", "Rococo": "c. 1730–1770",
+    "Neoclassicism": "c. 1760–1830", "Romanticism": "c. 1800–1850", "Renaissance": "14th–17th c., Italy",
+    "Vaporwave": "2010s, internet", "Cyberpunk": "1980s onward", "Brutalism": "1950s–1970s (revived on the web)",
+    "Bauhaus Period": "1919–1933", "Art Nouveau Period": "c. 1890–1910"
+  };
+  var CONFUSED = {
+    "Cubism": "Futurism — Cubism fractures a still subject; Futurism adds speed and motion.",
+    "Futurism": "Cubism — both fracture form, but Futurism is about motion, not multiple viewpoints.",
+    "Art Nouveau": "Art Deco — Nouveau is organic and hand-drawn (c.1900); Deco is geometric and machine-age (1920s–30s).",
+    "Art Deco": "Art Nouveau — Deco is streamlined and geometric; Nouveau is all whiplash plant curves.",
+    "Minimalism": "Modernism — Minimalism is a 1960s art movement; Modernism is the broader century-long project it sits inside.",
+    "Constructivism": "De Stijl — both are geometric abstraction, but Constructivism is diagonal and propagandistic; De Stijl is orthogonal and utopian.",
+    "Impressionism": "Post-Impressionism — Post-Impressionists (Cézanne, Van Gogh) kept the bright palette but rebuilt structure and emotion.",
+    "Surrealism": "Dada — Surrealism mines the unconscious with intent; Dada is anti-art nonsense and provocation.",
+    "Expressionism": "Impressionism — Impressionism records outer light; Expressionism distorts to show inner feeling.",
+    "Bauhaus": "Swiss / International Style — the Bauhaus taught the ideas; the Swiss school (1950s) turned them into the grid-and-Helvetica system."
+  };
+  var RELATED = {
+    "Cubism": ["Futurism", "Orphism", "Constructivism", "Suprematism", "Vorticism"],
+    "Futurism": ["Cubism", "Constructivism", "Vorticism", "Neofuturism"],
+    "Bauhaus": ["De Stijl", "Constructivism", "Minimalism", "Modernism", "Suprematism"],
+    "Minimalism": ["Bauhaus", "De Stijl", "Conceptual Art", "Minimalist", "Suprematism"],
+    "Surrealism": ["Dada", "Metaphysical Art", "Symbolism", "Dreamcore", "Fantasy"],
+    "Impressionism": ["Post-Impressionism", "Pointillism", "Divisionism", "Fauvism"],
+    "Art Nouveau": ["Art Deco", "Arts and Crafts", "Aesthetic Movement", "Symbolism"],
+    "Art Deco": ["Art Nouveau", "Bauhaus", "Streamline Moderne", "Precisionism"],
+    "Pop Art": ["Neo-Expressionism", "Street Art", "Kitsch", "Camp"],
+    "Brutalism": ["Maximalism", "Anti-Design", "Neubrutalism", "Grunge"],
+    "Cyberpunk": ["Vaporwave", "Synthwave", "Dieselpunk", "Neofuturism", "Glitch Art"],
+    "Vaporwave": ["Synthwave", "Y2K", "Retrowave", "Seapunk", "Cyberpunk"],
+    "Constructivism": ["Suprematism", "De Stijl", "Bauhaus", "Productivism"],
+    "Typography": ["Letterpress", "Kinetic Typography", "Calligraphy", "Lettering"],
+    "Photography": ["Film Photography", "Photomontage", "Cyanotype", "Documentary"],
+    "Collage": ["Assemblage", "Photomontage", "Decoupage", "Mixed Media"],
+    "Generative Art": ["Algorithmic Art", "Procedural Art", "Creative Coding", "Fractals", "Shader Art"]
+  };
+  function relatedTerms(term) {
+    if (RELATED[term]) return RELATED[term];
+    var cat = TERM_CATEGORY[term];
+    if (!cat) return [];
+    return ART_KEYWORDS[cat].filter(function (t) { return t !== term; }).slice(0, 6);
+  }
+
+  // The internet seam: today, canonical reference links; later, a fetch that
+  // returns extracted summaries + citations for the term.
+  function refLinks(term) {
+    var q = encodeURIComponent(term);
+    var wiki = encodeURIComponent(term.trim().replace(/\s+/g, "_"));
+    return [
+      { label: "Wikipedia", url: "https://en.wikipedia.org/wiki/" + wiki },
+      { label: "The Art Story", url: "https://www.theartstory.org/search/?q=" + q },
+      { label: "Google Arts & Culture", url: "https://artsandculture.google.com/search?q=" + q },
+      { label: "Are.na", url: "https://www.are.na/search?q=" + q }
+    ];
+  }
+
+  /* ---------------- Persistence ---------------- */
+  function loadJSON(key, fallback) {
+    try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
+    catch (e) { return fallback; }
+  }
+  function saveJSON(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; }
+  }
+
+  var STORE_KEY = "vantage_reviews_v1";
+  function loadReviews() { return loadJSON(STORE_KEY, {}); }
+  function saveReviews(data) { saveJSON(STORE_KEY, data); }
+  var reviewStore = loadReviews();
+
+  var SAVED_KEY = "vantage_saved_v1";
+  var COLL_KEY  = "vantage_collections_v1";
+  var SEEN_KEY  = "vantage_seen_v1";
+  var CMP_KEY   = "vantage_compares_v1";
+  var saved       = loadJSON(SAVED_KEY, []);
+  var collections = loadJSON(COLL_KEY, []);
+  var seen        = loadJSON(SEEN_KEY, { kw: {}, dz: {} });
+  var compares    = loadJSON(CMP_KEY, []);
+  if (!seen.kw) seen.kw = {};
+  if (!seen.dz) seen.dz = {};
+
+  /* ---------------- Community: shared reviews + rank ----------------
+     Reviews are written to a real public Supabase database (see the SQL
+     schema doc), so everyone who visits this site -- no org restriction --
+     sees the same activity and a running per-person review count: that
+     count IS the "rank" shown next to a name. There's no real login here,
+     just a display name you pick once (honor system, stored in this
+     browser) -- so identity is self-asserted, same as it ever was, just
+     now visible to the whole public instead of one org. If the database
+     can't be reached (offline, or `sb` failed to initialize) everything
+     quietly falls back to the local-only reviewing this app always had.
+     Rank is never stored as an incrementing counter -- it's always the
+     live COUNT of that handle's rows in the shared "reviews" table, which
+     sidesteps the last-writer-wins race a stored counter would hit. A
+     database-level unique constraint on (handle, design_key) is the real
+     backstop for "only your first take on a design counts" -- the
+     rankedDesigns check below is just what keeps the UI from even trying. */
+  var HANDLE_KEY = "vantage_handle_v1";
+  var RANKED_KEY = "vantage_ranked_designs_v1";
+  var myHandle = loadJSON(HANDLE_KEY, null);
+  var rankedDesigns = loadJSON(RANKED_KEY, []); // designKeys already counted toward MY rank
+  var db = null;
+  var myReviewCount = 0;
+  var myRankInitialized = false; // guards the milestone toast from firing on the very first snapshot
+  var myPrevRankPos = null;      // guards the "you moved up" toast the same way
+  var leaderboardDocs = [];      // raw review docs from the last snapshot
+  var leaderboardCatFilter = ""; // "" = every category
+  var leaderboard = [];          // [{ handle, count }] for the current filter, sorted desc
+  var MIN_RANKED_REVIEW_LEN = 20; // a review shorter than this still saves locally, just doesn't count toward rank
+  var RANK_MILESTONES = [5, 10, 25, 50, 100, 250, 500, 1000];
+
+  function sanitizeHandle(h) {
+    return (h || "").replace(/\s+/g, " ").trim().slice(0, 24);
+  }
+
+  /* ---- sign-in modal ---- */
+  var handleModalEl = document.getElementById("handleModal");
+  var handleScrimEl = document.getElementById("handleScrim");
+  var handleModalInput = document.getElementById("handleModalInput");
+  var handleModalTitleEl = document.getElementById("handleModalTitle");
+  var handleModalPendingCb = null;
+
+  function openHandleModal(opts, cb) {
+    opts = opts || {};
+    handleModalPendingCb = cb || null;
+    handleModalTitleEl.textContent = opts.title || (myHandle ? "Change your name" : "Sign in to review");
+    handleModalInput.value = myHandle || "";
+    handleModalEl.classList.add("open");
+    handleScrimEl.classList.add("open");
+    handleModalEl.setAttribute("aria-hidden", "false");
+    setTimeout(function () { handleModalInput.focus(); handleModalInput.select(); }, 200);
+  }
+
+  function closeHandleModal(result) {
+    handleModalEl.classList.remove("open");
+    handleScrimEl.classList.remove("open");
+    handleModalEl.setAttribute("aria-hidden", "true");
+    var cb = handleModalPendingCb;
+    handleModalPendingCb = null;
+    if (cb) cb(result);
+  }
+
+  function submitHandleModal() {
+    var h = sanitizeHandle(handleModalInput.value);
+    if (!h) { handleModalInput.focus(); return; }
+    myHandle = h;
+    saveJSON(HANDLE_KEY, myHandle);
+    myRankInitialized = false;
+    myPrevRankPos = null;
+    updateMyRankFromDocs();
+    renderRankBadge();
+    renderLeaderboard();
+    closeHandleModal(myHandle);
+  }
+
+  document.getElementById("handleModalSubmit").addEventListener("click", submitHandleModal);
+  document.getElementById("handleModalCancel").addEventListener("click", function () { closeHandleModal(null); });
+  document.getElementById("handleModalClose").addEventListener("click", function () { closeHandleModal(null); });
+  handleModalInput.addEventListener("keydown", function (e) { if (e.key === "Enter") submitHandleModal(); });
+  handleScrimEl.addEventListener("click", function () {
+    if (handleModalEl.classList.contains("open")) closeHandleModal(null);
+    if (profileModalEl.classList.contains("open")) closeProfileModal();
+  });
+
+  /* ---- reviewer profile panel (read-only, opened by clicking a name) ---- */
+  var profileModalEl = document.getElementById("profileModal");
+  var profileModalTitleEl = document.getElementById("profileModalTitle");
+  var profileModalMetaEl = document.getElementById("profileModalMeta");
+  var profileModalReviewsEl = document.getElementById("profileModalReviews");
+
+  function openProfile(handle) {
+    if (!db || !handle) return;
+    if (handleModalEl.classList.contains("open")) closeHandleModal(null);
+    profileModalTitleEl.textContent = handle + (handle === myHandle ? " (you)" : "");
+    profileModalMetaEl.textContent = "Loading…";
+    profileModalReviewsEl.innerHTML = "";
+    profileModalEl.classList.add("open");
+    handleScrimEl.classList.add("open");
+    profileModalEl.setAttribute("aria-hidden", "false");
+
+    db.from("reviews").select("*").eq("handle", handle).limit(100).then(function (res) {
+      if (res.error) { profileModalMetaEl.textContent = "Couldn't load this reviewer's activity."; return; }
+      var docs = (res.data || []).map(normalizeReviewRow)
+        .sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+      var rated = docs.filter(function (r) { return typeof r.cool === "number"; });
+      var avgCoolVal = rated.length
+        ? Math.round(rated.reduce(function (s, r) { return s + r.cool; }, 0) / rated.length)
+        : null;
+      profileModalMetaEl.textContent = docs.length + (docs.length === 1 ? " review" : " reviews") +
+        (avgCoolVal != null ? " · average cool rating " + avgCoolVal + "%" : "");
+      profileModalReviewsEl.innerHTML = "";
+      if (!docs.length) {
+        var none = document.createElement("div");
+        none.className = "none";
+        none.textContent = "No reviews yet.";
+        profileModalReviewsEl.appendChild(none);
+        return;
+      }
+      docs.slice(0, 12).forEach(function (rv) {
+        var wrapEl = document.createElement("div");
+        wrapEl.className = "review";
+        var head = document.createElement("div");
+        var a = document.createElement("span");
+        a.className = "author";
+        a.textContent = rv.designTitle || rv.designKey || "Untitled";
+        var tm = document.createElement("span");
+        tm.className = "time";
+        tm.textContent = relTime(rv.ts);
+        head.appendChild(a);
+        head.appendChild(tm);
+        var txt = document.createElement("div");
+        txt.className = "text";
+        txt.textContent = rv.text;
+        wrapEl.appendChild(head);
+        wrapEl.appendChild(txt);
+        if (typeof rv.cool === "number") wrapEl.appendChild(coolLine(rv.cool));
+        profileModalReviewsEl.appendChild(wrapEl);
+      });
+    }).catch(function () {
+      profileModalMetaEl.textContent = "Couldn't load this reviewer's activity.";
+    });
+  }
+
+  function closeProfileModal() {
+    profileModalEl.classList.remove("open");
+    handleScrimEl.classList.remove("open");
+    profileModalEl.setAttribute("aria-hidden", "true");
+  }
+  document.getElementById("profileModalClose").addEventListener("click", closeProfileModal);
+
+  // A review row from Postgres, normalized to the exact shape the rest of
+  // the app already expects (matches the old Artifact-db document shape 1:1
+  // so renderCommunityReviews/renderLeaderboard/openProfile need no changes).
+  function normalizeReviewRow(row) {
+    return {
+      id: row.id,
+      designKey: row.design_key,
+      designTitle: row.design_title,
+      handle: row.handle,
+      text: row.text,
+      cool: row.cool,
+      ts: row.ts,
+      resonance: null // filled in separately from the reactions table where needed
+    };
+  }
+
+  function initCommunityDb() {
+    db = sb; // keep the existing `if (!db)` gate checks working unchanged everywhere
+    renderRankBadge();
+    renderLeaderboard(); // shows the "couldn't connect" fallback when db is null
+    if (!db) return;
+    watchLeaderboard(); // also drives my rank + milestone toasts, see updateMyRankFromDocs
+    if (activeKey) watchCommunityReviews(activeKey);
+  }
+
+  function updateMyRankFromDocs() {
+    if (!myHandle) return;
+    var prev = myReviewCount;
+    myReviewCount = leaderboardDocs.filter(function (r) { return r.handle === myHandle; }).length;
+    renderRankBadge();
+    if (myRankInitialized && myReviewCount > prev && RANK_MILESTONES.indexOf(myReviewCount) >= 0) {
+      toast("🎉 " + myReviewCount + (myReviewCount === 1 ? " review" : " reviews") + " — nice milestone.");
+    }
+    myRankInitialized = true;
+    var idx = leaderboard.findIndex(function (r) { return r.handle === myHandle; });
+    var pos = idx >= 0 ? idx + 1 : null;
+    if (myPrevRankPos != null && pos != null && pos < myPrevRankPos) {
+      toast("You moved up to #" + pos + " on the leaderboard.");
+    }
+    myPrevRankPos = pos;
+  }
+
+  function computeLeaderboard(catFilter) {
+    var catSet = null;
+    if (catFilter && ART_KEYWORDS[catFilter]) {
+      catSet = {};
+      ART_KEYWORDS[catFilter].forEach(function (t) { catSet[t.toLowerCase()] = 1; });
+    }
+    var counts = {};
+    leaderboardDocs.forEach(function (r) {
+      if (!r || !r.handle) return;
+      if (catSet) {
+        var tags = designTags(r.designKey);
+        var hit = tags.some(function (t) { return catSet[t.toLowerCase()]; });
+        if (!hit) return;
+      }
+      counts[r.handle] = (counts[r.handle] || 0) + 1;
+    });
+    return Object.keys(counts).map(function (h) {
+      return { handle: h, count: counts[h] };
+    }).sort(function (a, b) { return b.count - a.count || a.handle.localeCompare(b.handle); });
+  }
+
+  // Supabase realtime is a change-event stream (INSERT/UPDATE/DELETE), not a
+  // live resnapshot like the old Artifact db -- so this does one initial
+  // fetch to seed leaderboardDocs, then folds each realtime INSERT into that
+  // same local array and re-renders, which keeps every consumer below
+  // (leaderboard, rank badge, milestone toasts) unchanged.
+  var leaderboardChannel = null;
+  function watchLeaderboard() {
+    if (!db) return;
+    db.from("reviews").select("*").order("ts", { ascending: true }).limit(1000)
+      .then(function (res) {
+        if (res.error) console.error("Vantage: leaderboard fetch failed: " + JSON.stringify(res.error));
+        leaderboardDocs = (res.data || []).map(normalizeReviewRow);
+        leaderboard = computeLeaderboard(leaderboardCatFilter);
+        renderLeaderboard();
+        updateMyRankFromDocs();
+      });
+    if (leaderboardChannel) return; // only one subscription needed for the app's lifetime
+    leaderboardChannel = db.channel("reviews-all")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "reviews" }, function (payload) {
+        leaderboardDocs.push(normalizeReviewRow(payload.new));
+        leaderboard = computeLeaderboard(leaderboardCatFilter);
+        renderLeaderboard();
+        updateMyRankFromDocs();
+      })
+      .subscribe();
+  }
+
+  // Reactions live in their own table (review_id, handle) rather than a
+  // patched JSON column -- that sidesteps a read-modify-write race entirely
+  // (two people reacting at once can never clobber each other), and a unique
+  // (review_id, handle) constraint means the same person reacting twice is
+  // just a harmless no-op at the database level. Folded back into the same
+  // { handle: true, ... } resonance-map shape the render code already expects.
+  var communityReviewsChannel = null;
+  function watchCommunityReviews(designKey) {
+    if (communityReviewsChannel) { db.removeChannel(communityReviewsChannel); communityReviewsChannel = null; }
+    if (!db || !designKey) { renderCommunityReviews([]); return; }
+    var list = [];
+    function refresh() {
+      list.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+      renderCommunityReviews(list.slice());
+    }
+    function loadReactionsFor(reviewIds) {
+      if (!reviewIds.length) return Promise.resolve();
+      return db.from("reactions").select("review_id,handle").in("review_id", reviewIds).then(function (res) {
+        (res.data || []).forEach(function (row) {
+          var rv = list.find(function (r) { return r.id === row.review_id; });
+          if (!rv) return;
+          rv.resonance = rv.resonance || {};
+          rv.resonance[row.handle] = true;
+        });
+      });
+    }
+    db.from("reviews").select("*").eq("design_key", designKey).limit(200)
+      .then(function (res) {
+        if (res.error) console.error("Vantage: design reviews fetch failed: " + JSON.stringify(res.error));
+        list = (res.data || []).map(normalizeReviewRow);
+        return loadReactionsFor(list.map(function (r) { return r.id; }));
+      })
+      .then(refresh)
+      .catch(function () { renderCommunityReviews([]); });
+    communityReviewsChannel = db.channel("reviews-" + designKey)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "reviews", filter: "design_key=eq." + designKey }, function (payload) {
+        list.push(normalizeReviewRow(payload.new));
+        refresh();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "reactions" }, function (payload) {
+        var rv = list.find(function (r) { return r.id === payload.new.review_id; });
+        if (!rv) return; // a reaction on a review not in this design's thread -- ignore
+        rv.resonance = rv.resonance || {};
+        rv.resonance[payload.new.handle] = true;
+        refresh();
+      })
+      .subscribe();
+  }
+
+  function reactToReview(reviewId) {
+    if (!db) return;
+    if (!myHandle) { openHandleModal({ title: "Sign in to react" }); return; }
+    db.from("reactions").insert({ review_id: reviewId, handle: myHandle })
+      .then(function (res) { if (res.error && res.error.code !== "23505") toast("Couldn't send that reaction."); }); // 23505 = already reacted, fine
+  }
+
+  function postCommunityReview(designKey, designTitle, text, cool) {
+    if (!db) return;
+    var trimmed = (text || "").trim();
+
+    function write() {
+      db.from("reviews").insert({
+        design_key: designKey,
+        design_title: designTitle || "",
+        handle: myHandle,
+        text: text,
+        cool: typeof cool === "number" ? cool : null,
+        ts: Date.now()
+      }).then(function (res) {
+        if (res.error) { console.error("Vantage: review insert failed: " + JSON.stringify(res.error)); toast("Couldn't share that review — saved locally only."); return; }
+        if (rankedDesigns.indexOf(designKey) < 0) {
+          rankedDesigns.push(designKey);
+          saveJSON(RANKED_KEY, rankedDesigns);
+        }
+      });
+    }
+
+    // Keep the rank count meaningful: a one-word review doesn't count, and
+    // only your first take on a given design counts (rewatching the same
+    // piece over and over shouldn't be a way to farm the number).
+    if (trimmed.length < MIN_RANKED_REVIEW_LEN) {
+      toast("Saved — add a sentence or two for it to count toward your rank.");
+      return;
+    }
+    if (rankedDesigns.indexOf(designKey) >= 0) {
+      toast("Saved — your rank only counts your first take on each design.");
+      return;
+    }
+    if (!myHandle) {
+      openHandleModal({ title: "Sign in to review" }, function (h) { if (h) write(); });
+      return;
+    }
+    write();
+  }
+
+  function renderRankBadge() {
+    var el = document.getElementById("rankBadge");
+    if (!el) return;
+    // db resolves null both while it's still loading and when it's
+    // genuinely unavailable (indistinguishable by design) -- either way,
+    // stay hidden until it resolves to something real, then light up.
+    if (!db) { el.hidden = true; return; }
+    el.hidden = false;
+    el.textContent = myHandle ? (myHandle + " · " + myReviewCount) : "Get ranked";
+    el.title = myHandle
+      ? "You've posted " + myReviewCount + (myReviewCount === 1 ? " review" : " reviews") + " · tap to change your name"
+      : "Pick a name to start tracking your review rank";
+  }
+
+  function renderCommunityReviews(list) {
+    var wrap = document.getElementById("communityReviews");
+    var box = document.getElementById("communityReviewsList");
+    if (!wrap || !box) return;
+    if (!db) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    box.innerHTML = "";
+    if (!list.length) {
+      var none = document.createElement("div");
+      none.className = "none";
+      none.textContent = "No one has reviewed this yet.";
+      box.appendChild(none);
+      return;
+    }
+    list.forEach(function (rv) {
+      var rank = leaderboard.find(function (r) { return r.handle === rv.handle; });
+      var wrapEl = document.createElement("div");
+      wrapEl.className = "review";
+      var head = document.createElement("div");
+      var a = document.createElement("span");
+      a.className = "author clickable";
+      a.textContent = rv.handle + (rank ? " · " + rank.count : "");
+      a.addEventListener("click", function () { openProfile(rv.handle); });
+      var tm = document.createElement("span");
+      tm.className = "time";
+      tm.textContent = relTime(rv.ts);
+      head.appendChild(a);
+      head.appendChild(tm);
+      var txt = document.createElement("div");
+      txt.className = "text";
+      txt.textContent = rv.text;
+      wrapEl.appendChild(head);
+      wrapEl.appendChild(txt);
+      if (typeof rv.cool === "number") wrapEl.appendChild(coolLine(rv.cool));
+      wrapEl.appendChild(resonateButton(rv));
+      box.appendChild(wrapEl);
+    });
+  }
+
+  var SPARK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z"/></svg>';
+
+  function resonateButton(rv) {
+    var count = rv.resonance ? Object.keys(rv.resonance).length : 0;
+    var reactedByMe = !!(myHandle && rv.resonance && rv.resonance[myHandle]);
+    var isMine = myHandle && rv.handle === myHandle;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "resonate-btn" + (reactedByMe ? " on" : "");
+    btn.innerHTML = SPARK_SVG + "<span>" + (count > 0 ? count : "Resonates") + "</span>";
+    if (isMine) {
+      btn.disabled = true;
+      btn.title = "Your own review";
+    } else if (reactedByMe) {
+      btn.disabled = true;
+      btn.title = "You found this resonant";
+    } else {
+      btn.title = "This resonated with you";
+      btn.addEventListener("click", function () { reactToReview(rv.id); });
+    }
+    return btn;
+  }
+
+  var leaderboardCatBuilt = false;
+  function buildLeaderboardCatOptions() {
+    var sel = document.getElementById("leaderboardCat");
+    if (!sel || leaderboardCatBuilt) return;
+    leaderboardCatBuilt = true;
+    var opt = document.createElement("option");
+    opt.value = ""; opt.textContent = "All reviewers";
+    sel.appendChild(opt);
+    Object.keys(CATEGORY_META).forEach(function (cat) {
+      if (cat === "yourKeywords") return;
+      var o = document.createElement("option");
+      o.value = cat;
+      o.textContent = "Top in " + CATEGORY_META[cat].label;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", function () {
+      leaderboardCatFilter = sel.value;
+      leaderboard = computeLeaderboard(leaderboardCatFilter);
+      renderLeaderboard();
+    });
+  }
+
+  function renderLeaderboard() {
+    var claimBox = document.getElementById("rankClaim");
+    var list = document.getElementById("leaderboardList");
+    var catSel = document.getElementById("leaderboardCat");
+    if (!claimBox || !list) return;
+    if (!db) {
+      claimBox.innerHTML = '<p class="lib-empty">Can’t connect to the shared review store — check your connection and reload.</p>';
+      list.innerHTML = "";
+      if (catSel) catSel.hidden = true;
+      return;
+    }
+    if (catSel) { catSel.hidden = false; buildLeaderboardCatOptions(); }
+    claimBox.innerHTML = "";
+    if (!myHandle) {
+      var claim = document.createElement("div");
+      claim.className = "rank-claim";
+      var span = document.createElement("span");
+      span.textContent = "Pick a name and every review you post starts counting toward your rank.";
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "Get ranked";
+      btn.addEventListener("click", function () { openHandleModal(); });
+      claim.appendChild(span);
+      claim.appendChild(btn);
+      claimBox.appendChild(claim);
+    }
+    list.innerHTML = "";
+    if (!leaderboard.length) {
+      list.innerHTML = '<p class="lib-empty">No reviews posted yet — be the first.</p>';
+      return;
+    }
+    var top = leaderboard.slice(0, 10);
+    top.forEach(function (r, i) {
+      list.appendChild(makeRankRow(i + 1, r));
+    });
+    if (myHandle) {
+      var myIdx = leaderboard.findIndex(function (r) { return r.handle === myHandle; });
+      if (myIdx >= 10) {
+        var sep = document.createElement("div");
+        sep.className = "rank-row rank-sep";
+        var dots = document.createElement("span");
+        dots.className = "pos";
+        dots.textContent = "···";
+        sep.appendChild(dots);
+        list.appendChild(sep);
+        list.appendChild(makeRankRow(myIdx + 1, leaderboard[myIdx]));
+      }
+    }
+  }
+
+  // Built with textContent (never innerHTML) since `handle` is free text
+  // someone else typed into the sign-in modal -- never trust it as markup.
+  function makeRankRow(pos, r) {
+    var row = document.createElement("div");
+    row.className = "rank-row" + (r.handle === myHandle ? " me" : "");
+    var posEl = document.createElement("span");
+    posEl.className = "pos";
+    posEl.textContent = pos;
+    var handleEl = document.createElement("span");
+    handleEl.className = "handle clickable";
+    handleEl.textContent = r.handle + (r.handle === myHandle ? " (you)" : "");
+    handleEl.addEventListener("click", function () { openProfile(r.handle); });
+    var countEl = document.createElement("span");
+    countEl.className = "count";
+    countEl.textContent = r.count + (r.count === 1 ? " review" : " reviews");
+    row.appendChild(posEl);
+    row.appendChild(handleEl);
+    row.appendChild(countEl);
+    return row;
+  }
+
+  /* ---------------- Custom / user-coined keywords ----------------
+     Anything the built-in bank doesn't cover. Added two ways: on the
+     spot from Research (the "Coin a new keyword" row), or automatically
+     the moment you tag an upload with a word the library doesn't
+     already know. Both paths land here, persist, and feed straight
+     back into ART_KEYWORDS / TERM_CATEGORY / KEYWORDS so the new term
+     shows up everywhere terms already show up -- the Home keyword map,
+     Research search, folders, the quiz pool (if it has a note). */
+  var CUSTOM_KW_KEY = "vantage_custom_keywords_v1";
+  var customKeywords = loadJSON(CUSTOM_KW_KEY, []); // [{ term, category, note, ts }]
+
+  function termExists(term) {
+    var low = term.toLowerCase();
+    return Object.keys(TERM_CATEGORY).some(function (t) { return t.toLowerCase() === low; });
+  }
+
+  function applyCustomKeywords() {
+    ART_KEYWORDS.yourKeywords = [];
+    customKeywords.forEach(function (ck) {
+      var cat = (ck.category && ART_KEYWORDS[ck.category]) ? ck.category : "yourKeywords";
+      if (ART_KEYWORDS[cat].indexOf(ck.term) < 0) ART_KEYWORDS[cat].push(ck.term);
+      TERM_CATEGORY[ck.term] = cat;
+      if (ck.note) KEYWORD_NOTES[ck.term] = ck.note;
+    });
+    KEYWORDS = Array.from(new Set(Object.values(ART_KEYWORDS).flat()))
+      .sort(function () { return Math.random() - 0.5; });
+  }
+  applyCustomKeywords();
+
+  // category: an existing ART_KEYWORDS key, or omit/pass "yourKeywords" for
+  // your own catch-all bucket. Returns {ok, reason} -- reason is "empty" or
+  // "exists" on failure so callers can message accordingly.
+  function addCustomKeyword(term, category, note) {
+    term = (term || "").trim();
+    if (!term) return { ok: false, reason: "empty" };
+    if (termExists(term)) return { ok: false, reason: "exists" };
+    customKeywords.push({
+      term: term,
+      category: (category && ART_KEYWORDS[category]) ? category : "yourKeywords",
+      note: (note || "").trim(),
+      ts: Date.now()
+    });
+    saveJSON(CUSTOM_KW_KEY, customKeywords);
+    applyCustomKeywords();
+    return { ok: true };
+  }
+
+  /* ---------------- Design graph + collections + tracking ---------------- */
+  function baseByTitle(t) {
+    for (var i = 0; i < BASE_DESIGNS.length; i++) if (BASE_DESIGNS[i].title === t) return BASE_DESIGNS[i];
+    return null;
+  }
+  function uploadByKey(key) {
+    if (key.indexOf("upload:") !== 0) return null;
+    for (var i = 0; i < uploads.length; i++) if ("upload:" + uploads[i].id === key) return uploads[i];
+    return null;
+  }
+  function allDesignKeys() {
+    var out = BASE_DESIGNS.map(function (d) { return d.title; });
+    uploads.forEach(function (u) { out.push("upload:" + u.id); });
+    return out;
+  }
+  function designTags(key) {
+    var b = baseByTitle(key); if (b) return b.keywords || [];
+    var u = uploadByKey(key); if (u) return u.tags || [];
+    return [];
+  }
+  function designsForKeyword(term) {
+    var t = String(term).toLowerCase();
+    return allDesignKeys().filter(function (k) {
+      return designTags(k).some(function (x) { return x.toLowerCase() === t; });
+    });
+  }
+
+  function isSaved(key) { return saved.indexOf(key) > -1; }
+  function toggleSaved(key) {
+    var i = saved.indexOf(key);
+    if (i > -1) saved.splice(i, 1); else saved.unshift(key);
+    saveJSON(SAVED_KEY, saved);
+  }
+
+  function collectionsWith(key) {
+    return collections.filter(function (c) { return c.items.indexOf(key) > -1; });
+  }
+  function newCollection(name) {
+    var c = { id: "c" + Date.now().toString(36), name: (name || "").trim().slice(0, 40) || "Untitled", ts: Date.now(), items: [] };
+    collections.unshift(c);
+    saveJSON(COLL_KEY, collections);
+    return c;
+  }
+  function collToggle(collId, key) {
+    var c = collections.filter(function (x) { return x.id === collId; })[0];
+    if (!c) return;
+    var i = c.items.indexOf(key);
+    if (i > -1) c.items.splice(i, 1); else c.items.unshift(key);
+    saveJSON(COLL_KEY, collections);
+  }
+
+  function markSeenKw(term) { if (!seen.kw[term]) { seen.kw[term] = Date.now(); saveJSON(SEEN_KEY, seen); } }
+  function markSeenDz(key)  { if (!seen.dz[key])  { seen.dz[key]  = Date.now(); saveJSON(SEEN_KEY, seen); } }
+  function seenKwCount() { return Object.keys(seen.kw).length; }
+
+  function dayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  function dailyKeyword() { return KEYWORDS[hashStr("kw" + dayKey()) % KEYWORDS.length]; }
+  function dailyDesign() { var k = allDesignKeys(); return k[hashStr("dz" + dayKey()) % k.length]; }
+
+  function relTime(ts) {
+    var s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return "just now";
+    var m = Math.floor(s / 60);
+    if (m < 60) return m + " min" + (m > 1 ? "s" : "") + " ago";
+    var h = Math.floor(m / 60);
+    if (h < 24) return h + " hr" + (h > 1 ? "s" : "") + " ago";
+    var d = Math.floor(h / 24);
+    return d + " day" + (d > 1 ? "s" : "") + " ago";
+  }
+
+  function wrap(v, span) { return ((v % span) + span) % span; }
+
+  /* ---------------- View switching ---------------- */
+  var navLinks = document.querySelectorAll(".nav-link");
+  var views = document.querySelectorAll(".view");
+  navLinks.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.getAttribute("data-view");
+      navLinks.forEach(function (b) { b.classList.toggle("active", b === btn); });
+      views.forEach(function (v) { v.classList.toggle("active", v.id === id); });
+      if (id === "home") build();
+      if (id === "library") renderLibrary();
+      if (id === "taste") renderTaste();
+    });
+  });
+
+  /* ================================================================
+     TWO WAYS IN: browse the actual designs, or browse by keyword.
+     Both use the same control -- a free, flowing 2D scroll where the
+     cursor's direction and distance from center fly the field that
+     way with eased momentum -- and both wrap modulo their span, so
+     they never end.
+     ================================================================ */
+  var home = document.getElementById("home");
+  var stage = document.getElementById("stage");
+  var kwStage = document.getElementById("kwStage");
+  var grid = document.getElementById("grid");
+  var kwPlane = document.getElementById("kwPlane");
+  var focal = document.getElementById("focal");
+  var homeHint = document.getElementById("homeHint");
+  var modeToggle = document.getElementById("modeToggle");
+
+  var isTouchDevice = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+  var dragWord = isTouchDevice ? "Drag" : "Click and drag";
+  var tapWord = isTouchDevice ? "tap" : "click";
+
+  var mode = "designs";
+
+  var CELL_W = 150, CELL_H = 180;   // design field cell
+  var KW_W = 200, KW_H = 56;        // keyword field cell (wide -- names run long)
+
+  var tiles = [];
+  var kwTiles = [];
+  var gSpanX = 0, gSpanY = 0;
+  var kSpanX = 0, kSpanY = 0;
+
+  var gX = 0, gY = 0, kX = 0, kY = 0;   // field offsets: design grid / keyword map
+
+  function fieldDims(cellW, cellH) {
+    var vw = home.clientWidth || window.innerWidth;
+    var vh = home.clientHeight || window.innerHeight;
+    // span > 2x viewport so a tile only ever wraps while off-screen
+    var cols = Math.ceil((vw * 2 + 400) / cellW);
+    var rows = Math.ceil((vh * 2 + 400) / cellH);
+    if (cols % 2 === 0) cols++;
+    if (rows % 2 === 0) rows++;
+    cols = Math.min(cols, 45);
+    rows = Math.min(rows, 33);
+    return { cols: cols, rows: rows };
+  }
+
+  var gridFilterTerm = null;   // when set, the Designs field only cycles matching designs
+
+  /* ---------------- Live museum API pulls (Met Museum Open Access) ----------------
+     BASE_DESIGNS above is a small curated seed so the grid renders instantly on
+     load. These functions grow it in the background with real, live-fetched
+     public-domain works -- both a broad starter set, and works matching whatever
+     keyword the person filters by (so a keyword the seed set has no examples of
+     still turns up real art instead of "no designs tagged X yet"). Every call is
+     wrapped so a network hiccup just leaves the existing pool as-is; nothing here
+     can break the grid. */
+  var MET_API = "https://collectionapi.metmuseum.org/public/collection/v1";
+  var metSeenIds = {};                 // objectID -> true, once added to BASE_DESIGNS (no dupes)
+  var metSeenTerms = {};                // search term -> true, once queried (no repeat fetches)
+  BASE_DESIGNS.forEach(function (d) {
+    var m = /\/(\d+)$/.exec(d.sourceUrl || "");
+    if (m) metSeenIds[m[1]] = true;
+  });
+
+  function metObjectToDesign(o, extraTag) {
+    if (!o || !o.primaryImageSmall && !o.primaryImage) return null;
+    var tags = (o.tags || []).map(function (t) { return t.term; }).filter(Boolean);
+    if (o.classification) tags.push(o.classification);
+    if (o.department) tags.push(o.department);
+    if (extraTag && tags.indexOf(extraTag) === -1) tags.push(extraTag);
+    return {
+      title: o.title || "Untitled",
+      artist: o.artistDisplayName || "Unknown",
+      source: "The Met",
+      sourceUrl: o.objectURL || ("https://www.metmuseum.org/art/collection/search/" + o.objectID),
+      img: o.primaryImage || o.primaryImageSmall,
+      keywords: Array.from(new Set(tags)).slice(0, 8)
+    };
+  }
+
+  function metFetchObject(id) {
+    return fetch(MET_API + "/objects/" + id).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+  }
+
+  // Fetches a batch of objects a few at a time rather than all at once, so a
+  // single search doesn't fire dozens of simultaneous requests at the API.
+  function metFetchBatch(ids, extraTag) {
+    var out = [];
+    var i = 0;
+    function next() {
+      if (i >= ids.length) return Promise.resolve(out);
+      var batch = ids.slice(i, i + 5);
+      i += 5;
+      return Promise.all(batch.map(function (id) { return metFetchObject(id); }))
+        .then(function (objs) {
+          objs.forEach(function (o) {
+            var d = metObjectToDesign(o, extraTag);
+            if (d) out.push(d);
+          });
+          return next();
+        });
+    }
+    return next();
+  }
+
+  // Searches the Met's public collection for a term, pulls in up to `limit` new
+  // public-domain works with images, tags them with the search term (so a
+  // keyword filter that just triggered this fetch will find them), appends any
+  // genuinely new ones (by object ID) to BASE_DESIGNS, and rebuilds the grid if
+  // it's still showing the same context. Safe to call repeatedly -- terms and
+  // object IDs already seen are skipped.
+  function metSearchAndAdd(term, limit) {
+    var key = String(term).toLowerCase();
+    if (metSeenTerms[key]) return Promise.resolve(0);
+    metSeenTerms[key] = true;
+    var url = MET_API + "/search?hasImages=true&q=" + encodeURIComponent(term);
+    return fetch(url).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (res) {
+        if (!res || !res.objectIDs || !res.objectIDs.length) return 0;
+        var ids = res.objectIDs.filter(function (id) { return !metSeenIds[id]; }).slice(0, limit || 12);
+        ids.forEach(function (id) { metSeenIds[id] = true; });
+        if (!ids.length) return 0;
+        return metFetchBatch(ids, term).then(function (designs) {
+          designs.forEach(function (d) { BASE_DESIGNS.push(d); });
+          return designs.length;
+        });
+      })
+      .catch(function () { return 0; }); // offline / blocked -- pool just stays as-is
+  }
+
+  // A handful of broad, image-rich terms to grow the default (unfiltered) home
+  // grid well beyond the 14-work seed set, fetched once in the background after
+  // first paint so the grid is never empty or blocked on the network.
+  var MET_SEED_TERMS = ["landscape", "portrait", "still life", "abstract", "sculpture", "flowers",
+    "ceramics", "photography", "drawing", "architecture", "mythology", "textile"];
+  function initMetLive() {
+    if (!window.fetch) return; // very old browser -- static seed set still works fine
+    var i = 0;
+    function next() {
+      if (i >= MET_SEED_TERMS.length) return;
+      var term = MET_SEED_TERMS[i++];
+      metSearchAndAdd(term, 12).then(function (added) {
+        if (added && mode === "designs" && !gridFilterTerm) buildGrid();
+        next();
+      });
+    }
+    next();
+  }
+
+  function gridPool() {
+    if (!gridFilterTerm) {
+      return BASE_DESIGNS.map(function (b, i) {
+        return { key: b.title, title: b.title, artist: b.artist, img: b.img || null,
+                 color: PASTELS[i % PASTELS.length] };
+      });
+    }
+    return designsForKeyword(gridFilterTerm).map(function (k) {
+      var b = baseByTitle(k);
+      if (b) return { key: b.title, title: b.title, artist: b.artist, img: b.img || null,
+                      color: PASTELS[BASE_DESIGNS.indexOf(b) % PASTELS.length] };
+      var u = uploadByKey(k);
+      return { key: k, title: u ? u.title : k, subtitle: "Your upload", img: u ? u.src : null };
+    });
+  }
+
+  // Straight (c + r) % n puts identical designs along visible diagonal bands
+  // -- very noticeable once a design repeats every few tiles. This mixes the
+  // (c, r) coordinate into a well-scattered index instead (still fully
+  // deterministic, so a rebuild/resize keeps the same look), so repeats of
+  // the same design end up scattered around the field rather than lined up.
+  function scatterIndex(c, r, n) {
+    var h = (c * 374761393 + r * 668265263) >>> 0; // classic integer hash mix (odd large primes)
+    h = (h ^ (h >>> 13)) >>> 0;
+    h = Math.imul(h, 1274126177) >>> 0;
+    h = (h ^ (h >>> 16)) >>> 0;
+    return h % n;
+  }
+
+  function buildGrid() {
+    dSettled = false; // freshly built tiles have no transform yet -- force a repaint
+    var d = fieldDims(CELL_W, CELL_H);
+    gSpanX = d.cols * CELL_W;
+    gSpanY = d.rows * CELL_H;
+    grid.innerHTML = "";
+    tiles = [];
+    var pool = gridPool();
+    if (!pool.length) { return; }   // filtered to nothing — homeHint explains
+    for (var r = 0; r < d.rows; r++) {
+      for (var c = 0; c < d.cols; c++) {
+        var design = pool[scatterIndex(c, r, pool.length)];
+        var tile = document.createElement("div");
+        tile.className = "tile";
+        var inner = document.createElement("div");
+        inner.className = "tile-inner";
+        // Base fill first, always -- so a dead or slow-loading image URL
+        // still leaves a clean colored tile instead of a blank box.
+        inner.style.background = design.color || PASTELS[(c + r * 2) % PASTELS.length];
+        if (design.img) { inner.style.backgroundImage = 'url("' + design.img + '")'; inner.style.backgroundSize = "cover"; inner.style.backgroundPosition = "center"; }
+        inner.textContent = design.img ? "" : design.title;
+        tile.appendChild(inner);
+        tile.setAttribute("role", "button");
+        tile.setAttribute("tabindex", "0");
+        tile.setAttribute("aria-label", "Review " + design.title);
+        tile._bx = (c - (d.cols - 1) / 2) * CELL_W;
+        tile._by = (r - (d.rows - 1) / 2) * CELL_H;
+        tile._key = design.key;
+        (function (dz) {
+          tile.addEventListener("click", function () { openSidebar(dz); });
+          tile.addEventListener("keydown", function (ev) {
+            if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openSidebar(dz); }
+          });
+        })(design);
+        grid.appendChild(tile);
+        tiles.push(tile);
+      }
+    }
+  }
+
+  function buildKeywords() {
+    kwSettled = false; // freshly built tiles have no transform yet -- force a repaint
+    var d = fieldDims(KW_W, KW_H);
+    kSpanX = d.cols * KW_W;
+    kSpanY = d.rows * KW_H;
+    kwPlane.innerHTML = "";
+    kwTiles = [];
+    for (var r = 0; r < d.rows; r++) {
+      for (var c = 0; c < d.cols; c++) {
+        var name = KEYWORDS[(c + r) % KEYWORDS.length];
+        var b = document.createElement("button");
+        b.className = "tag";
+        b.textContent = name;
+        b._bx = (c - (d.cols - 1) / 2) * KW_W;
+        b._by = (r - (d.rows - 1) / 2) * KW_H;
+        (function (nm, btn) {
+          btn.addEventListener("click", function () { selectKeyword(nm, btn); });
+        })(name, b);
+        kwPlane.appendChild(b);
+        kwTiles.push(b);
+      }
+    }
+  }
+
+  /* ---- Both fields use the SAME control: click (or touch) and drag to
+     pan. The field follows the pointer 1:1 while dragging; on release it
+     coasts briefly on your last drag speed, then settles onto its lattice
+     -- same coast-and-snap feel the old hover-fly mode had, just driven by
+     an actual drag instead of cursor position. ---- */
+  var dDragging = false, dDX = 0, dDY = 0, dVX = 0, dVY = 0;      // design grid
+  var kwDragging = false, kwDX = 0, kwDY = 0, kwVX = 0, kwVY = 0; // keyword map
+
+  function makeDragger(el, onDelta, setDragging) {
+    var active = false, lastX = 0, lastY = 0, pid = null, moved = 0, justDragged = false;
+    var DRAG_THRESHOLD = 6; // px of total movement before a gesture counts as a drag, not a tap
+
+    function start(x, y, pointerId) {
+      active = true;
+      lastX = x; lastY = y;
+      pid = pointerId;
+      moved = 0;
+      setDragging(true);
+      el.classList.add("dragging");
+    }
+    function move(x, y) {
+      if (!active) return;
+      var dx = x - lastX, dy = y - lastY;
+      moved += Math.abs(dx) + Math.abs(dy);
+      onDelta(dx, dy);
+      lastX = x; lastY = y;
+    }
+    function end() {
+      if (!active) return;
+      active = false;
+      pid = null;
+      justDragged = moved > DRAG_THRESHOLD;
+      setDragging(false);
+      el.classList.remove("dragging");
+    }
+
+    el.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "mouse" && e.button !== 0) return; // left button / any touch or pen only
+      start(e.clientX, e.clientY, e.pointerId);
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    el.addEventListener("pointermove", function (e) {
+      if (pid !== null && e.pointerId !== pid) return;
+      move(e.clientX, e.clientY);
+    });
+    el.addEventListener("pointerup", function (e) { if (pid === null || e.pointerId === pid) end(); });
+    el.addEventListener("pointercancel", function (e) { if (pid === null || e.pointerId === pid) end(); });
+    // A real drag shouldn't also open/select whatever tile or tag the
+    // pointer happens to release over -- a plain tap still works normally,
+    // this only swallows the click when the gesture actually moved.
+    el.addEventListener("click", function (e) {
+      if (justDragged) { e.stopPropagation(); e.preventDefault(); }
+      justDragged = false;
+    }, true);
+  }
+
+  makeDragger(
+    stage,
+    function (dx, dy) { dDX += dx; dDY += dy; },
+    function (isOn) { dDragging = isOn; }
+  );
+  makeDragger(
+    kwStage,
+    function (dx, dy) { kwDX += dx; kwDY += dy; },
+    function (isOn) { kwDragging = isOn; }
+  );
+
+  /* ---- mode toggle ---- */
+  modeToggle.querySelectorAll(".mode-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () { setMode(btn.getAttribute("data-mode")); });
+  });
+
+  var kwEverBuilt = false; // the keyword field (~1000+ tag buttons) is only
+                            // built the first time you actually switch to it,
+                            // so it isn't sitting in the DOM unused on load
+  function setMode(m) {
+    mode = m;
+    modeToggle.querySelectorAll(".mode-btn").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-mode") === m);
+    });
+    var designs = m === "designs";
+    stage.hidden = !designs;
+    kwStage.hidden = designs;
+    focal.classList.toggle("kw", !designs);
+    if (!designs && !kwEverBuilt) { buildKeywords(); kwEverBuilt = true; }
+    dDragging = kwDragging = false;
+    dVX = dVY = kwVX = kwVY = dDX = dDY = kwDX = kwDY = 0;
+    updateHomeHint();
+    paintActive();
+  }
+
+  function updateHomeHint() {
+    if (mode !== "designs") {
+      homeHint.textContent = dragWord + " to pan the map · " + tapWord + " a keyword to choose";
+      return;
+    }
+    if (gridFilterTerm && !gridPool().length) {
+      homeHint.textContent = "No designs tagged “" + gridFilterTerm + "” yet — tag one from its review panel";
+    } else if (gridFilterTerm) {
+      homeHint.textContent = "Showing designs tagged “" + gridFilterTerm + "” · " + tapWord + " the filter to clear";
+    } else {
+      homeHint.textContent = dragWord + " to pan the grid · " + tapWord + " a design to review";
+    }
+  }
+
+  var gridFilterEl = document.getElementById("gridFilter");
+  var gridFilterTermEl = document.getElementById("gridFilterTerm");
+  function setGridFilter(term) {
+    gridFilterTerm = term || null;
+    if (gridFilterTerm) {
+      gridFilterTermEl.textContent = gridFilterTerm;
+      gridFilterEl.hidden = false;
+      // The curated seed set rarely has works for an arbitrary keyword --
+      // live-search the Met for this exact term so filtering by something
+      // like "Cyberpunk" or "Fresco" turns up real matching art instead of
+      // just the empty-state message.
+      metSearchAndAdd(gridFilterTerm, 10).then(function (added) {
+        if (added && gridFilterTerm === term) { buildGrid(); updateHomeHint(); }
+      });
+    } else {
+      gridFilterEl.hidden = true;
+    }
+    buildGrid();
+    setMode("designs");
+  }
+  gridFilterEl.addEventListener("click", function () { setGridFilter(null); });
+
+  /* ---------------- Animation loop ---------------- */
+  var MAP_VEASE = 0.11;  // coast-down easing once a drag ends -- decays quickly to a stop
+
+  var gFocalPrev = null, kFocalPrev = null;
+
+  function centred(list, ox, oy, spanX, spanY) {
+    var hx = spanX / 2, hy = spanY / 2, best = null, bestD = Infinity;
+    for (var i = 0; i < list.length; i++) {
+      var x = wrap(list[i]._bx + ox + hx, spanX) - hx;
+      var y = wrap(list[i]._by + oy + hy, spanY) - hy;
+      var d = x * x + y * y;
+      if (d < bestD) { bestD = d; best = list[i]; }
+    }
+    return best;
+  }
+
+  function place(list, ox, oy, spanX, spanY, centerAnchor) {
+    var hx = spanX / 2, hy = spanY / 2;
+    for (var i = 0; i < list.length; i++) {
+      var t = list[i];
+      var x = wrap(t._bx + ox + hx, spanX) - hx;
+      var y = wrap(t._by + oy + hy, spanY) - hy;
+      t.style.transform = centerAnchor
+        ? "translate(calc(-50% + " + x.toFixed(2) + "px), calc(-50% + " + y.toFixed(2) + "px))"
+        : "translate(" + x.toFixed(2) + "px," + y.toFixed(2) + "px)";
+    }
+  }
+
+  function setFocal(el, which) {
+    var prev = which === "g" ? gFocalPrev : kFocalPrev;
+    if (el === prev) return;
+    if (prev) prev.classList.remove("is-focal");
+    if (el) el.classList.add("is-focal");
+    if (which === "g") gFocalPrev = el; else kFocalPrev = el;
+  }
+
+  // Once a field has fully coasted to a stop and snapped onto its lattice,
+  // there's nothing new to paint -- skip the (potentially 1000+ tile)
+  // repositioning pass entirely until the pointer moves again. Cuts idle
+  // CPU/battery use to near zero instead of animating forever at 60fps.
+  var dSettled = false, kwSettled = false;
+
+  function paintDesigns() {
+    // While dragging, follow the pointer exactly (this tick's accumulated
+    // delta becomes this tick's velocity too, so releasing mid-drag keeps
+    // that speed as coast momentum instead of stopping dead).
+    if (dDragging) {
+      dVX = dDX; dVY = dDY;
+      dDX = 0; dDY = 0;
+    }
+
+    var moving = dDragging || Math.abs(dVX) > 0.02 || Math.abs(dVY) > 0.02;
+    if (!moving && dSettled) return;
+
+    if (!dDragging) {
+      dVX += (0 - dVX) * MAP_VEASE;
+      dVY += (0 - dVY) * MAP_VEASE;
+    }
+    gX += dVX;
+    gY += dVY;
+
+    // after it has coasted to a near-stop, settle softly onto the lattice
+    if (!dDragging && Math.abs(dVX) < 0.15 && Math.abs(dVY) < 0.15) {
+      gX += (Math.round(gX / CELL_W) * CELL_W - gX) * 0.06;
+      gY += (Math.round(gY / CELL_H) * CELL_H - gY) * 0.06;
+    }
+
+    place(tiles, gX, gY, gSpanX, gSpanY);
+    setFocal(centred(tiles, gX, gY, gSpanX, gSpanY), "g");
+
+    dSettled = !dDragging && Math.abs(dVX) < 0.02 && Math.abs(dVY) < 0.02
+      && Math.abs(gX - Math.round(gX / CELL_W) * CELL_W) < 0.05
+      && Math.abs(gY - Math.round(gY / CELL_H) * CELL_H) < 0.05;
+  }
+
+  function paintKeywords() {
+    if (kwDragging) {
+      kwVX = kwDX; kwVY = kwDY;
+      kwDX = 0; kwDY = 0;
+    }
+
+    var moving = kwDragging || Math.abs(kwVX) > 0.02 || Math.abs(kwVY) > 0.02;
+    if (!moving && kwSettled) return;
+
+    if (!kwDragging) {
+      kwVX += (0 - kwVX) * MAP_VEASE;
+      kwVY += (0 - kwVY) * MAP_VEASE;
+    }
+    kX += kwVX;
+    kY += kwVY;
+
+    // after it has coasted to a near-stop, settle softly onto the lattice
+    if (!kwDragging && Math.abs(kwVX) < 0.15 && Math.abs(kwVY) < 0.15) {
+      kX += (Math.round(kX / KW_W) * KW_W - kX) * 0.06;
+      kY += (Math.round(kY / KW_H) * KW_H - kY) * 0.06;
+    }
+
+    place(kwTiles, kX, kY, kSpanX, kSpanY, true);
+    setFocal(centred(kwTiles, kX, kY, kSpanX, kSpanY), "k");
+
+    kwSettled = !kwDragging && Math.abs(kwVX) < 0.02 && Math.abs(kwVY) < 0.02
+      && Math.abs(kX - Math.round(kX / KW_W) * KW_W) < 0.05
+      && Math.abs(kY - Math.round(kY / KW_H) * KW_H) < 0.05;
+  }
+
+  function paintActive() {
+    if (mode === "designs") paintDesigns(); else paintKeywords();
+  }
+
+  function tick() {
+    paintActive();
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------------- Keyword selection (from the Home keyword map) ---------------- */
+  function selectKeyword(name, btn) {
+    var was = btn.classList.contains("selected");
+    kwTiles.forEach(function (t) { t.classList.remove("selected"); });
+    if (was) return;
+    kwTiles.forEach(function (t) { if (t.textContent === name) t.classList.add("selected"); });
+    gotoResearch("styles");
+    researchSearch.value = name;
+    filterStyles(name);
+    openInfo(name);
+  }
+
+  function gotoResearch(sub) {
+    navLinks.forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-view") === "research");
+    });
+    views.forEach(function (v) { v.classList.toggle("active", v.id === "research"); });
+    setResearchSub(sub || "styles");
+  }
+
+  function goHome() {
+    navLinks.forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-view") === "home"); });
+    views.forEach(function (v) { v.classList.toggle("active", v.id === "home"); });
+    build();
+  }
+  function goView(id) {
+    navLinks.forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-view") === id); });
+    views.forEach(function (v) { v.classList.toggle("active", v.id === id); });
+    if (id === "library") renderLibrary();
+    if (id === "taste") renderTaste();
+  }
+
+  /* ---------------- Research · Styles (the full keyword library) ---------------- */
+  var researchSearch = document.getElementById("researchSearch");
+  var researchGroups = document.getElementById("researchGroups");
+  var rMatch = document.getElementById("rMatch");
+  var chipIndex = [];   // { el, term (lowercased), groupEl }
+
+  /* ---- Coin a new keyword (Research > Styles) ---- */
+  var newKwTerm = document.getElementById("newKwTerm");
+  var newKwCat = document.getElementById("newKwCat");
+  var newKwAdd = document.getElementById("newKwAdd");
+
+  function populateNewKwCat() {
+    newKwCat.innerHTML = "";
+    Object.keys(CATEGORY_META).forEach(function (cat) {
+      var o = document.createElement("option");
+      o.value = cat;
+      o.textContent = CATEGORY_META[cat].label;
+      newKwCat.appendChild(o);
+    });
+    newKwCat.value = "yourKeywords";
+  }
+  populateNewKwCat();
+
+  function submitNewKeyword() {
+    var term = newKwTerm.value.trim();
+    if (!term) return;
+    if (termExists(term)) { toast("“" + term + "” is already in the library — try searching for it."); return; }
+    var note = window.prompt("Optional: a short line describing “" + term + "” (blank to skip):", "") || "";
+    var res = addCustomKeyword(term, newKwCat.value, note);
+    if (!res.ok) { toast("Couldn't add that one."); return; }
+    newKwTerm.value = "";
+    renderStyles();
+    renderApps();
+    buildKeywords();
+    toast("Added “" + term + "” to your keyword library");
+    openInfo(term);
+  }
+  newKwAdd.addEventListener("click", submitNewKeyword);
+  newKwTerm.addEventListener("keydown", function (e) { if (e.key === "Enter") submitNewKeyword(); });
+
+  function renderStyles() {
+    researchGroups.innerHTML = "";
+    chipIndex = [];
+    Object.keys(ART_KEYWORDS).forEach(function (cat) {
+      var terms = Array.from(new Set(ART_KEYWORDS[cat]));
+      if (cat === "yourKeywords" && !terms.length) return; // hide until you've coined one
+
+      var meta = CATEGORY_META[cat] || { label: cat };
+
+      var group = document.createElement("div");
+      group.className = "kw-group";
+
+      var head = document.createElement("div");
+      head.className = "kw-group-head";
+      var lbl = document.createElement("span");
+      lbl.className = "section-label";
+      lbl.style.marginBottom = "0";
+      lbl.textContent = meta.label;
+      var cnt = document.createElement("span");
+      cnt.className = "kw-count";
+      cnt.textContent = terms.length;
+      head.appendChild(lbl);
+      head.appendChild(cnt);
+
+      var chips = document.createElement("div");
+      chips.className = "kw-chips";
+      terms.forEach(function (term) {
+        var c = document.createElement("button");
+        c.className = "kw-chip";
+        c.textContent = term;
+        c.addEventListener("click", function () { openInfo(term); });
+        chips.appendChild(c);
+        chipIndex.push({ el: c, term: term.toLowerCase(), groupEl: group });
+      });
+
+      group.appendChild(head);
+      group.appendChild(chips);
+      researchGroups.appendChild(group);
+    });
+    filterStyles("");
+  }
+
+  function filterStyles(q) {
+    q = (q || "").trim().toLowerCase();
+    var shown = 0;
+    var hitGroups = [];
+    chipIndex.forEach(function (rec) {
+      var hit = !q || rec.term.indexOf(q) > -1;
+      rec.el.hidden = !hit;
+      if (hit) { shown++; if (hitGroups.indexOf(rec.groupEl) < 0) hitGroups.push(rec.groupEl); }
+    });
+    Array.prototype.forEach.call(researchGroups.children, function (g) {
+      g.hidden = !!q && hitGroups.indexOf(g) < 0;
+    });
+    rMatch.textContent = q
+      ? shown + (shown === 1 ? " match" : " matches") + " for “" + q + "”"
+      : chipIndex.length + " terms across " + researchGroups.children.length + " categories";
+  }
+  researchSearch.addEventListener("input", function () { filterStyles(researchSearch.value); });
+
+  /* ---------------- Research · Applications (folders over the whole bank) ----------------
+     Every ART_KEYWORDS category is owned by exactly one folder, so the folders
+     together file all 1,150+ terms. Each folder carries a short primer. */
+  var APPLICATIONS = [
+    { name: "Your Keywords", cats: ["yourKeywords"],
+      edu: "Terms you've coined yourself — words that named something the built-in library didn't quite capture. Add one from Research → Styles, or just tag an upload with a new word and it lands here automatically." },
+    { name: "Movements & Schools", cats: ["classicMovements"],
+      edu: "Named art movements — groups of artists bound by a moment, a manifesto, or a teacher. Learn these and you have the vocabulary critics use, plus a shortcut to a whole visual world: “make it more Bauhaus” lands because Bauhaus is a shared reference." },
+    { name: "Contemporary & New Media", cats: ["contemporaryStyles", "digitalTrends"],
+      edu: "How art is made and framed now — especially after 1980 and online. These practices are defined by the tool (code, AI, the browser) or the context (the gallery, the network, the crowd) rather than a fixed look. Expect a lot of overlap and fast churn." },
+    { name: "Aesthetics & Subcultures", cats: ["aesthetics"],
+      edu: "Internet-era “-core” and “-punk” looks: moods and identities more than movements. They spread through images and communities, mutate fast, and describe a vibe as much as a technique. Useful for pinning down a feeling a client can’t name." },
+    { name: "Materials & Mediums", cats: ["mediums"],
+      edu: "What a work is physically made of or in — oil paint, clay, neon, silk, pixels. The medium sets the rules: what marks it can hold, how it ages, how close you stand. Naming the medium is often the first real thing you can say about a piece." },
+    { name: "Techniques & Process", cats: ["techniques", "printMethods"],
+      edu: "The hands-on methods — how paint is laid down, how a plate is bitten, how an image is printed or rendered. Technique is where craft lives; two artists in the same medium can look nothing alike. Includes the full printmaking vocabulary." },
+    { name: "Sculpture & Form", cats: ["sculptureTypes"],
+      edu: "Ways of working in three dimensions — relief versus in-the-round, carved versus cast versus assembled, monument versus miniature versus something that moves. This is the vocabulary for anything you walk around rather than look at flat." },
+    { name: "Subjects & Genres", cats: ["subjects"],
+      edu: "What the work is a picture of — portrait, landscape, still life — and the genre traditions around each. It’s the oldest way of sorting images and still the fastest way to say what you’re looking at." },
+    { name: "Visual Qualities", cats: ["characteristics"],
+      edu: "The formal adjectives — geometric or organic, dense or sparse, high- or low-contrast, matte or glossy, controlled or gestural. These are the dials you actually turn when you critique a piece or art-direct one." },
+    { name: "Themes & Ideas", cats: ["socialThemes"],
+      edu: "What the work is about — identity, memory, power, climate, the body, technology. The conceptual layer a lot of contemporary art leads with, and the thing curators write the wall text about." },
+    { name: "Culture & Place", cats: ["culturalContexts"],
+      edu: "Traditions and lineages a work speaks from — regional, diasporic, religious, Indigenous. Context that changes how forms, colours, and symbols should be read; the same motif can mean opposite things in two traditions." },
+    { name: "Eras & Periods", cats: ["timePeriods"],
+      edu: "The timeline art historians use, from Prehistoric to the Social Media Era. Useful for placing a style in history — and for spotting revivals, where an old look (Art Deco, Y2K) comes back around decades later." }
+  ];
+
+  var FOLDER_SVG =
+    '<svg class="folder-ico" viewBox="0 0 48 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#ead9ff"/><stop offset="1" stop-color="#ccb2f0"/></linearGradient></defs>' +
+    '<path d="M3 9c0-2.2 1.8-4 4-4h10.7c1 0 2 .4 2.8 1.1L23 8.2c.5.5 1.1.8 1.8.8H41c2.2 0 4 1.8 4 4v20c0 2.2-1.8 4-4 4H7c-2.2 0-4-1.8-4-4V9z" fill="url(#fg)"/>' +
+    '<path d="M3 15h42v17c0 2.2-1.8 4-4 4H7c-2.2 0-4-1.8-4-4V15z" fill="#ffffff" fill-opacity="0.3"/>' +
+    '</svg>';
+
+  function folderTerms(f) {
+    var seen = {}, out = [];
+    f.cats.forEach(function (c) {
+      (ART_KEYWORDS[c] || []).forEach(function (t) { if (!seen[t]) { seen[t] = 1; out.push(t); } });
+    });
+    return out;
+  }
+
+  function renderApps() {
+    var wrap = document.getElementById("folders");
+    wrap.innerHTML = "";
+    APPLICATIONS.forEach(function (f) {
+      var terms = folderTerms(f);
+      if (f.cats[0] === "yourKeywords" && !terms.length) return; // hide until you've coined one
+      var card = document.createElement("div");
+      card.className = "folder-card";
+
+      var head = document.createElement("button");
+      head.type = "button";
+      head.className = "folder-head";
+      head.setAttribute("aria-expanded", "false");
+      head.innerHTML = FOLDER_SVG +
+        '<span class="folder-name"></span>' +
+        '<span class="folder-count"></span>' +
+        '<span class="folder-chevron">&#9656;</span>';
+      head.querySelector(".folder-name").textContent = f.name;
+      head.querySelector(".folder-count").textContent = terms.length + " terms";
+
+      var body = document.createElement("div");
+      body.className = "folder-body";
+      var edu = document.createElement("p");
+      edu.className = "folder-edu";
+      edu.textContent = f.edu;
+      var chips = document.createElement("div");
+      chips.className = "folder-terms";
+      var sample = terms.slice(0, 32);
+      sample.forEach(function (t) {
+        var c = document.createElement("button");
+        c.type = "button";
+        c.className = "kw-chip";
+        c.textContent = t;
+        c.addEventListener("click", function (e) { e.stopPropagation(); openInfo(t); });
+        chips.appendChild(c);
+      });
+      if (terms.length > sample.length) {
+        var more = document.createElement("span");
+        more.className = "folder-more";
+        more.textContent = "+" + (terms.length - sample.length) + " more";
+        chips.appendChild(more);
+      }
+      body.appendChild(edu);
+      body.appendChild(chips);
+
+      head.addEventListener("click", function () {
+        var open = card.classList.toggle("open");
+        head.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+
+      card.appendChild(head);
+      card.appendChild(body);
+      wrap.appendChild(card);
+    });
+  }
+
+  /* ---------------- Research sub-view toggle ---------------- */
+  var researchSeg = document.getElementById("researchSeg");
+  var rStyles = document.getElementById("rStyles");
+  var rApps = document.getElementById("rApps");
+  var rQuiz = document.getElementById("rQuiz");
+  function setResearchSub(sub) {
+    researchSeg.querySelectorAll(".seg-btn").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-r") === sub);
+    });
+    rStyles.hidden = sub !== "styles";
+    rApps.hidden = sub !== "apps";
+    rQuiz.hidden = sub !== "quiz";
+    if (sub === "quiz" && !quizRound) nextQuiz();
+  }
+  researchSeg.querySelectorAll(".seg-btn").forEach(function (b) {
+    b.addEventListener("click", function () { setResearchSub(b.getAttribute("data-r")); });
+  });
+
+  document.getElementById("surpriseBtn").addEventListener("click", function () {
+    openInfo(KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)]);
+  });
+
+  /* ---------------- Research · Quiz ---------------- */
+  var quizPool = Object.keys(KEYWORD_NOTES);
+  var quizDef = document.getElementById("quizDef");
+  var quizChoices = document.getElementById("quizChoices");
+  var quizFeedback = document.getElementById("quizFeedback");
+  var quizNext = document.getElementById("quizNext");
+  var quizScoreEl = document.getElementById("quizScore");
+  var quizStreakEl = document.getElementById("quizStreak");
+  var quizSeenEl = document.getElementById("quizSeen");
+  var quizScore = 0, quizStreak = 0, quizSeenN = 0, quizRound = null;
+
+  function shuffle(a) { return a.slice().sort(function () { return Math.random() - 0.5; }); }
+
+  function nextQuiz() {
+    var answer = quizPool[Math.floor(Math.random() * quizPool.length)];
+    var distract = shuffle(quizPool.filter(function (t) { return t !== answer; })).slice(0, 3);
+    var opts = shuffle(distract.concat([answer]));
+    quizRound = { answer: answer };
+    quizDef.textContent = "“" + KEYWORD_NOTES[answer] + "”";
+    quizFeedback.textContent = "";
+    quizNext.hidden = true;
+    quizChoices.innerHTML = "";
+    opts.forEach(function (o) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "quiz-choice";
+      b.textContent = o;
+      b.addEventListener("click", function () { answerQuiz(o, b); });
+      quizChoices.appendChild(b);
+    });
+  }
+
+  function answerQuiz(pick, btn) {
+    if (!quizRound || quizRound.done) return;
+    quizRound.done = true;
+    quizSeenN++;
+    var right = pick === quizRound.answer;
+    Array.prototype.forEach.call(quizChoices.children, function (b) {
+      b.disabled = true;
+      if (b.textContent === quizRound.answer) b.classList.add("correct");
+      else if (b === btn) b.classList.add("wrong");
+    });
+    if (right) { quizScore++; quizStreak++; quizFeedback.textContent = "Correct."; }
+    else { quizStreak = 0; quizFeedback.textContent = "It was " + quizRound.answer + "."; }
+    quizScoreEl.textContent = quizScore;
+    quizStreakEl.textContent = quizStreak;
+    quizSeenEl.textContent = quizSeenN;
+    markSeenKw(quizRound.answer);
+    quizNext.hidden = false;
+  }
+  quizNext.addEventListener("click", nextQuiz);
+
+  renderStyles();
+  renderApps();
+
+  /* ---------------- Review sidebar ---------------- */
+  var sidebar = document.getElementById("sidebar");
+  var scrim = document.getElementById("scrim");
+  var sbTitle = document.getElementById("sbTitle");
+  var sbArtist = document.getElementById("sbArtist");
+  var sbImg = document.getElementById("sbImg");
+  // A dead or blocked image URL should just fall back to the media
+  // container's plain color -- never a broken-image glyph.
+  sbImg.addEventListener("error", function () { sbImg.hidden = true; });
+  var reviewText = document.getElementById("reviewText");
+  var submitReview = document.getElementById("submitReview");
+  var reviewsList = document.getElementById("reviewsList");
+  var coolInput = document.getElementById("coolInput");
+  var coolVal = document.getElementById("coolVal");
+  var sbCool = document.getElementById("sbCool");
+  var sbCoolVal = document.getElementById("sbCoolVal");
+  var sbCoolFill = document.getElementById("sbCoolFill");
+  var sbHeart = document.getElementById("sbHeart");
+  var sbTags = document.getElementById("sbTags");
+  var sbSource = document.getElementById("sbSource");
+  var sbCollSelect = document.getElementById("sbCollSelect");
+  var activeKey = null;
+  var activeDesign = null;
+  var lastFocused = null;
+
+  function renderSbHeart() {
+    var on = activeKey && isSaved(activeKey);
+    sbHeart.classList.toggle("on", !!on);
+    sbHeart.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+  sbHeart.addEventListener("click", function () {
+    if (!activeKey) return;
+    toggleSaved(activeKey);
+    renderSbHeart();
+  });
+
+  function renderSbTags() {
+    sbTags.innerHTML = "";
+    var isUpload = activeKey && activeKey.indexOf("upload:") === 0;
+    var tags = designTags(activeKey);
+    tags.forEach(function (t) {
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "sb-tag";
+      chip.textContent = t;
+      chip.title = isUpload ? "Remove tag" : "See designs like this";
+      chip.addEventListener("click", function () {
+        if (isUpload) {
+          var u = uploadByKey(activeKey);
+          u.tags = (u.tags || []).filter(function (x) { return x !== t; });
+          saveUploads(uploads);
+          renderSbTags();
+        } else {
+          closeSidebar(); goHome(); setGridFilter(t);
+        }
+      });
+      sbTags.appendChild(chip);
+    });
+    if (isUpload) {
+      var add = document.createElement("button");
+      add.type = "button";
+      add.className = "sb-tag add";
+      add.textContent = "+ tag";
+      add.addEventListener("click", function () {
+        var v = window.prompt("Add a style / keyword tag:");
+        if (!v) return;
+        var u = uploadByKey(activeKey);
+        u.tags = u.tags || [];
+        var coined = 0;
+        v.split(",").forEach(function (part) {
+          part = part.trim();
+          if (!part) return;
+          if (u.tags.indexOf(part) < 0) u.tags.push(part);
+          // A tag the library has never seen becomes a real keyword too --
+          // it'll show up in the Home keyword map and Research from now on.
+          if (addCustomKeyword(part, "yourKeywords", "").ok) coined++;
+        });
+        saveUploads(uploads);
+        renderSbTags();
+        if (coined) {
+          renderStyles(); renderApps(); buildKeywords();
+          toast(coined === 1 ? "New keyword added to your library" : coined + " new keywords added to your library");
+        }
+      });
+      sbTags.appendChild(add);
+    }
+  }
+
+  function renderSbSource() {
+    sbSource.innerHTML = "";
+    var isUpload = activeKey && activeKey.indexOf("upload:") === 0;
+    if (isUpload) {
+      var u = uploadByKey(activeKey);
+      var lab = document.createElement("span");
+      lab.textContent = "Where's it from?";
+      var inp = document.createElement("input");
+      inp.type = "text";
+      inp.placeholder = "URL or note";
+      inp.value = u.source || "";
+      inp.addEventListener("change", function () { u.source = inp.value.trim(); saveUploads(uploads); });
+      sbSource.appendChild(lab);
+      sbSource.appendChild(inp);
+    } else {
+      var b = baseByTitle(activeKey);
+      if (b && b.sourceUrl) {
+        var a = document.createElement("a");
+        a.href = b.sourceUrl;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = "Source · " + (b.source || "view original") + " ↗";
+        a.style.color = "var(--purple)";
+        a.style.fontWeight = "600";
+        sbSource.appendChild(a);
+      } else {
+        sbSource.textContent = b && b.source ? "Source · " + b.source : "";
+      }
+    }
+  }
+
+  function renderSbCollections() {
+    sbCollSelect.innerHTML = '<option value="">Add to collection…</option>';
+    collections.forEach(function (c) {
+      var inIt = c.items.indexOf(activeKey) > -1;
+      var o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = (inIt ? "✓ " : "") + c.name;
+      sbCollSelect.appendChild(o);
+    });
+    var nw = document.createElement("option");
+    nw.value = "__new";
+    nw.textContent = "+ New collection…";
+    sbCollSelect.appendChild(nw);
+  }
+  sbCollSelect.addEventListener("change", function () {
+    var v = sbCollSelect.value;
+    if (!v || !activeKey) return;
+    if (v === "__new") {
+      var name = window.prompt("Name the collection:");
+      if (name) { var c = newCollection(name); collToggle(c.id, activeKey); }
+    } else {
+      collToggle(v, activeKey);
+    }
+    sbCollSelect.value = "";
+    renderSbCollections();
+  });
+
+  function paintCoolInput() {
+    var v = +coolInput.value;
+    coolInput.style.setProperty("--fill", v + "%");
+    coolVal.textContent = v + "%";
+  }
+  coolInput.addEventListener("input", paintCoolInput);
+  paintCoolInput();
+
+  function avgCool(key) {
+    var rated = (reviewStore[key] || []).filter(function (rv) { return typeof rv.cool === "number"; });
+    if (!rated.length) return null;
+    return Math.round(rated.reduce(function (s, rv) { return s + rv.cool; }, 0) / rated.length);
+  }
+
+  function openSidebar(design) {
+    activeKey = design.key || design.title;
+    activeDesign = design;
+    markSeenDz(activeKey);
+    sbTitle.textContent = design.title;
+    sbArtist.textContent = design.subtitle || (design.artist ? "by " + design.artist : "");
+    if (design.img) { sbImg.src = design.img; sbImg.hidden = false; }
+    else { sbImg.removeAttribute("src"); sbImg.hidden = true; }
+    renderSbHeart();
+    renderSbTags();
+    renderSbSource();
+    renderSbCollections();
+    reviewText.value = "";
+    coolInput.value = 50;
+    paintCoolInput();
+    renderReviews();
+    watchCommunityReviews(activeKey);
+    lastFocused = document.activeElement;
+    sidebar.classList.add("open");
+    scrim.classList.add("open");
+    sidebar.setAttribute("aria-hidden", "false");
+    setTimeout(function () { reviewText.focus(); }, 280);
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove("open");
+    scrim.classList.remove("open");
+    sidebar.setAttribute("aria-hidden", "true");
+    activeKey = null;
+    if (communityReviewsChannel && db) { db.removeChannel(communityReviewsChannel); communityReviewsChannel = null; }
+    if (lastFocused && lastFocused.focus) lastFocused.focus();
+  }
+
+  function coolLine(pct) {
+    var cl = document.createElement("div");
+    cl.className = "cool-line";
+    var meter = document.createElement("div");
+    meter.className = "cool-meter";
+    var fill = document.createElement("i");
+    fill.style.width = pct + "%";
+    meter.appendChild(fill);
+    var n = document.createElement("span");
+    n.className = "n";
+    n.textContent = pct + "%";
+    cl.appendChild(meter);
+    cl.appendChild(n);
+    return cl;
+  }
+
+  function renderReviews() {
+    var list = reviewStore[activeKey] || [];
+
+    // aggregate "cool" for the whole design
+    var avg = avgCool(activeKey);
+    if (avg == null) {
+      sbCool.hidden = true;
+    } else {
+      var rated = list.filter(function (rv) { return typeof rv.cool === "number"; }).length;
+      sbCool.hidden = false;
+      sbCoolVal.textContent = avg + "%  ·  " + rated + (rated === 1 ? " rating" : " ratings");
+      sbCoolFill.style.width = avg + "%";
+    }
+
+    reviewsList.innerHTML = "";
+    if (!list.length) {
+      var none = document.createElement("div");
+      none.className = "none";
+      none.textContent = "No reviews yet. Be the first.";
+      reviewsList.appendChild(none);
+      return;
+    }
+    list.forEach(function (rv) {
+      var wrapEl = document.createElement("div");
+      wrapEl.className = "review";
+      var head = document.createElement("div");
+      var a = document.createElement("span");
+      a.className = "author";
+      a.textContent = rv.author;
+      var tm = document.createElement("span");
+      tm.className = "time";
+      tm.textContent = relTime(rv.ts);
+      head.appendChild(a);
+      head.appendChild(tm);
+      var txt = document.createElement("div");
+      txt.className = "text";
+      txt.textContent = rv.text;
+      wrapEl.appendChild(head);
+      wrapEl.appendChild(txt);
+      if (typeof rv.cool === "number") wrapEl.appendChild(coolLine(rv.cool));
+      reviewsList.appendChild(wrapEl);
+    });
+  }
+
+  function postReview() {
+    var text = reviewText.value.trim();
+    if (!text || !activeKey) return;
+    var cool = +coolInput.value;
+    if (!reviewStore[activeKey]) reviewStore[activeKey] = [];
+    reviewStore[activeKey].unshift({
+      author: "You", text: text, ts: Date.now(), cool: cool
+    });
+    saveReviews(reviewStore);
+    postCommunityReview(activeKey, activeDesign && activeDesign.title, text, cool);
+    reviewText.value = "";
+    coolInput.value = 50;
+    paintCoolInput();
+    renderReviews();
+    renderLibrary();
+    renderTaste();
+  }
+
+  submitReview.addEventListener("click", postReview);
+  reviewText.addEventListener("keydown", function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") postReview();
+  });
+  document.getElementById("sidebarClose").addEventListener("click", closeSidebar);
+  document.getElementById("rankBadge").addEventListener("click", function () {
+    openHandleModal();
+  });
+
+  /* ---------------- Keyword info panel (Research) ---------------- */
+  var infoPanel = document.getElementById("infoPanel");
+  var infoCat = document.getElementById("infoCat");
+  var infoTerm = document.getElementById("infoTerm");
+  var infoEra = document.getElementById("infoEra");
+  var infoNote = document.getElementById("infoNote");
+  var infoConfused = document.getElementById("infoConfused");
+  var infoRelated = document.getElementById("infoRelated");
+  var infoDesigns = document.getElementById("infoDesigns");
+  var infoDesignsLabel = document.getElementById("infoDesignsLabel");
+  var infoExplore = document.getElementById("infoExplore");
+  var infoSources = document.getElementById("infoSources");
+  var infoActiveTerm = null;
+
+  function openInfo(term) {
+    infoActiveTerm = term;
+    markSeenKw(term);
+    var cat = TERM_CATEGORY[term];
+    infoCat.textContent = cat && CATEGORY_META[cat] ? CATEGORY_META[cat].label : "Style";
+    infoTerm.textContent = term;
+
+    if (ERA[term]) { infoEra.textContent = ERA[term]; infoEra.hidden = false; }
+    else { infoEra.hidden = true; }
+
+    infoNote.textContent = keywordNote(term);
+
+    if (CONFUSED[term]) { infoConfused.textContent = CONFUSED[term]; infoConfused.hidden = false; }
+    else { infoConfused.hidden = true; }
+
+    infoRelated.innerHTML = "";
+    relatedTerms(term).forEach(function (rt) {
+      var c = document.createElement("button");
+      c.type = "button";
+      c.className = "kw-chip";
+      c.textContent = rt;
+      c.addEventListener("click", function () { openInfo(rt); });
+      infoRelated.appendChild(c);
+    });
+
+    var dks = designsForKeyword(term);
+    infoDesignsLabel.textContent = "Designs in this style (" + dks.length + ")";
+    infoDesigns.innerHTML = "";
+    if (dks.length) {
+      dks.slice(0, 8).forEach(function (k) {
+        var d = resolveDesign(k);
+        infoDesigns.appendChild(libCard({ key: d.key, title: d.title, subtitle: d.subtitle,
+          color: d.color, img: d.img, meta: "" }));
+      });
+    } else {
+      var p = document.createElement("p");
+      p.className = "lib-empty";
+      p.textContent = "None tagged yet — open a design and add this as a tag.";
+      infoDesigns.appendChild(p);
+    }
+    infoExplore.onclick = function () { closeInfo(); goHome(); setGridFilter(term); };
+
+    infoSources.innerHTML = "";
+    refLinks(term).forEach(function (s) {
+      var a = document.createElement("a");
+      a.href = s.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = s.label;
+      infoSources.appendChild(a);
+    });
+    lastFocused = document.activeElement;
+    infoPanel.classList.add("open");
+    scrim.classList.add("open");
+    infoPanel.setAttribute("aria-hidden", "false");
+  }
+  function closeInfo() {
+    infoPanel.classList.remove("open");
+    infoPanel.setAttribute("aria-hidden", "true");
+    if (!sidebar.classList.contains("open")) scrim.classList.remove("open");
+    if (lastFocused && lastFocused.focus) lastFocused.focus();
+  }
+  document.getElementById("infoClose").addEventListener("click", closeInfo);
+
+  scrim.addEventListener("click", function () { closeSidebar(); closeInfo(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (infoPanel.classList.contains("open")) closeInfo();
+    else if (sidebar.classList.contains("open")) closeSidebar();
+  });
+
+  /* ---------------- Your Library ---------------- */
+  var UP_KEY = "vantage_uploads_v1";
+  function loadUploads() { try { return JSON.parse(localStorage.getItem(UP_KEY)) || []; } catch (e) { return []; } }
+  function saveUploads(a) { try { localStorage.setItem(UP_KEY, JSON.stringify(a)); return true; } catch (e) { return false; } }
+  var uploads = loadUploads();
+
+  var reviewedGrid = document.getElementById("reviewedGrid");
+  var uploadsGrid = document.getElementById("uploadsGrid");
+  var uploadDrop = document.getElementById("uploadDrop");
+  var uploadInput = document.getElementById("uploadInput");
+  var uploadMsgEl = document.getElementById("uploadMsg");
+  function uploadMsg(t) { uploadMsgEl.textContent = t || ""; }
+
+  function reviewCount(key) { return (reviewStore[key] || []).length; }
+
+  function resolveDesign(key) {
+    var b = BASE_DESIGNS.filter(function (d) { return d.title === key; })[0];
+    if (b) return { key: key, title: b.title, subtitle: "by " + b.artist, img: b.img || null,
+                    color: PASTELS[BASE_DESIGNS.indexOf(b) % PASTELS.length] };
+    if (key.indexOf("upload:") === 0) {
+      var u = uploads.filter(function (x) { return "upload:" + x.id === key; })[0];
+      if (u) return { key: key, title: u.title, subtitle: "Your upload", img: u.src };
+    }
+    return { key: key, title: key, subtitle: "" };
+  }
+
+  function libCard(o) {
+    var card = document.createElement("div");
+    card.className = "lib-card";
+    var thumb = document.createElement("button");
+    thumb.type = "button";
+    thumb.className = "lib-thumb";
+    thumb.setAttribute("aria-label", "Open " + o.title);
+    thumb.style.backgroundColor = o.color || "var(--purple-light-2)";
+    if (o.img) thumb.style.backgroundImage = 'url("' + o.img + '")';
+    thumb.addEventListener("click", function () {
+      openSidebar({ key: o.key, title: o.title, subtitle: o.subtitle, img: o.img });
+    });
+    var t = document.createElement("div"); t.className = "lib-title"; t.textContent = o.title;
+    var m = document.createElement("div"); m.className = "lib-meta"; m.textContent = o.meta || "";
+    card.appendChild(thumb); card.appendChild(t); card.appendChild(m);
+    if (!o.noHeart && o.key) {
+      var hb = document.createElement("button");
+      hb.type = "button"; hb.className = "lib-x lib-heart" + (isSaved(o.key) ? " on" : "");
+      hb.innerHTML = isSaved(o.key) ? "&#10084;" : "&#9825;";
+      hb.setAttribute("aria-label", "Save");
+      hb.style.right = o.onRemove ? "30px" : "6px";
+      hb.addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleSaved(o.key);
+        if (activeKey === o.key) renderSbHeart();
+        renderLibrary();
+      });
+      card.appendChild(hb);
+    }
+    if (o.onRemove) {
+      var x = document.createElement("button");
+      x.type = "button"; x.className = "lib-x"; x.innerHTML = "&times;";
+      x.setAttribute("aria-label", "Remove upload");
+      x.addEventListener("click", function (e) { e.stopPropagation(); o.onRemove(); });
+      card.appendChild(x);
+    }
+    return card;
+  }
+
+  function renderReviewed() {
+    reviewedGrid.innerHTML = "";
+    var keys = Object.keys(reviewStore).filter(function (k) { return reviewCount(k) > 0; })
+      .sort(function (a, b) {
+        return (reviewStore[b][0] ? reviewStore[b][0].ts : 0) - (reviewStore[a][0] ? reviewStore[a][0].ts : 0);
+      });
+    if (!keys.length) {
+      reviewedGrid.innerHTML = '<p class="lib-empty">Nothing reviewed yet — open a design and post a take.</p>';
+      return;
+    }
+    keys.forEach(function (k) {
+      var d = resolveDesign(k), n = reviewCount(k), c = avgCool(k);
+      reviewedGrid.appendChild(libCard({
+        key: d.key, title: d.title, subtitle: d.subtitle, color: d.color, img: d.img,
+        meta: n + (n === 1 ? " review" : " reviews") + (c == null ? "" : " · " + c + "% cool")
+      }));
+    });
+  }
+
+  function renderUploads() {
+    uploadsGrid.innerHTML = "";
+    if (!uploads.length) {
+      uploadsGrid.innerHTML = '<p class="lib-empty">No uploads yet.</p>';
+      return;
+    }
+    uploads.forEach(function (u) {
+      var key = "upload:" + u.id, n = reviewCount(key), c = avgCool(key);
+      uploadsGrid.appendChild(libCard({
+        key: key, title: u.title, subtitle: "Your upload", img: u.src,
+        meta: n ? n + (n === 1 ? " note" : " notes") + (c == null ? "" : " · " + c + "% cool") : "Tap to self-review",
+        onRemove: function () { removeUpload(u.id); }
+      }));
+    });
+  }
+
+  var savedGrid = document.getElementById("savedGrid");
+  var collList = document.getElementById("collList");
+  var collName = document.getElementById("collName");
+
+  function renderSaved() {
+    savedGrid.innerHTML = "";
+    if (!saved.length) {
+      savedGrid.innerHTML = '<p class="lib-empty">Nothing saved yet — tap the heart on any design.</p>';
+      return;
+    }
+    saved.forEach(function (k) {
+      var d = resolveDesign(k), n = reviewCount(k);
+      savedGrid.appendChild(libCard({
+        key: d.key, title: d.title, subtitle: d.subtitle, color: d.color, img: d.img,
+        meta: n ? n + (n === 1 ? " review" : " reviews") : d.subtitle
+      }));
+    });
+  }
+
+  function renderCollections() {
+    collList.innerHTML = "";
+    if (!collections.length) {
+      collList.innerHTML = '<p class="lib-empty">No collections — name one above to group designs.</p>';
+      return;
+    }
+    collections.forEach(function (c) {
+      var wrap = document.createElement("div");
+      wrap.className = "coll-item";
+      var head = document.createElement("div");
+      head.className = "coll-item-head";
+      var nm = document.createElement("span"); nm.className = "cname"; nm.textContent = c.name;
+      var ct = document.createElement("span"); ct.className = "ccount";
+      ct.textContent = c.items.length + (c.items.length === 1 ? " design" : " designs");
+      var del = document.createElement("button");
+      del.type = "button"; del.className = "cdel"; del.textContent = "delete";
+      del.addEventListener("click", function () {
+        if (!window.confirm("Delete the collection “" + c.name + "”? (designs are not removed)")) return;
+        collections = collections.filter(function (x) { return x.id !== c.id; });
+        saveJSON(COLL_KEY, collections);
+        renderCollections();
+      });
+      head.appendChild(nm); head.appendChild(ct); head.appendChild(del);
+      wrap.appendChild(head);
+
+      var g = document.createElement("div");
+      g.className = "lib-grid";
+      if (!c.items.length) {
+        g.innerHTML = '<p class="lib-empty">Empty — add designs from a review panel.</p>';
+      } else {
+        c.items.forEach(function (k) {
+          var d = resolveDesign(k);
+          g.appendChild(libCard({
+            key: d.key, title: d.title, subtitle: d.subtitle, color: d.color, img: d.img,
+            noHeart: true,
+            meta: "",
+            onRemove: function () { collToggle(c.id, k); renderCollections(); }
+          }));
+        });
+      }
+      wrap.appendChild(g);
+      collList.appendChild(wrap);
+    });
+  }
+
+  document.getElementById("collAdd").addEventListener("click", function () {
+    var v = (collName.value || "").trim();
+    if (!v) return;
+    newCollection(v);
+    collName.value = "";
+    renderCollections();
+  });
+
+  function renderLibrary() { renderReviewed(); renderUploads(); renderSaved(); renderCollections(); }
+
+  function removeUpload(id) {
+    if (!window.confirm("Remove this upload and any notes on it?")) return;
+    uploads = uploads.filter(function (u) { return u.id !== id; });
+    delete reviewStore["upload:" + id];
+    saveUploads(uploads); saveReviews(reviewStore);
+    if (activeKey === "upload:" + id && sidebar.classList.contains("open")) closeSidebar();
+    renderLibrary();
+  }
+
+  // Downscale on the client so a few screenshots don't blow the localStorage quota.
+  function downscale(file, maxDim, cb) {
+    var fr = new FileReader();
+    fr.onerror = function () { cb(null); };
+    fr.onload = function () {
+      var img = new Image();
+      img.onerror = function () { cb(null); };
+      img.onload = function () {
+        var s = Math.min(1, maxDim / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width * s)), h = Math.max(1, Math.round(img.height * s));
+        var cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        try { cb(cv.toDataURL("image/jpeg", 0.78)); } catch (e) { cb(null); }
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+
+  function addFiles(list, done) {
+    done = done || function () {};
+    var files = Array.prototype.slice.call(list).filter(function (f) { return /^image\//.test(f.type); });
+    if (!files.length) { uploadMsg("Those weren’t image files."); done(0, "Those weren’t image files."); return; }
+    uploadMsg("Adding…");
+    var made = [], pending = files.length;
+    files.forEach(function (f) {
+      downscale(f, 900, function (url) {
+        if (url) made.push({
+          id: "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          title: (f.name.replace(/\.[^.]+$/, "").trim() || "Untitled").slice(0, 40),
+          src: url, ts: Date.now()
+        });
+        if (--pending) return;
+        if (!made.length) { uploadMsg("Couldn’t read those images."); done(0, "Couldn’t read those images."); return; }
+        var next = made.concat(uploads);
+        if (saveUploads(next)) {
+          uploads = next; uploadMsg(""); renderLibrary(); done(made.length, null);
+        } else {
+          uploadMsg("That’s over the browser’s storage limit — try fewer or smaller screenshots.");
+          renderLibrary(); done(0, "Over the browser’s storage limit — try smaller images.");
+        }
+      });
+    });
+  }
+
+  document.getElementById("uploadPick").addEventListener("click", function () { uploadInput.click(); });
+  uploadInput.addEventListener("change", function () { addFiles(uploadInput.files); uploadInput.value = ""; });
+
+  /* ---------------- Home quick-add widget ---------------- */
+  var quickAdd = document.getElementById("quickAdd");
+  var quickInput = document.getElementById("quickInput");
+  var toastEl = document.getElementById("toast");
+  var toastTimer;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2600);
+  }
+  quickAdd.addEventListener("click", function () { quickInput.click(); });
+  quickInput.addEventListener("change", function () {
+    addFiles(quickInput.files, function (n, err) {
+      toast(err ? err : (n === 1 ? "Added to Your Library" : n + " added to Your Library"));
+    });
+    quickInput.value = "";
+  });
+  ["dragenter", "dragover"].forEach(function (ev) {
+    uploadDrop.addEventListener(ev, function (e) { e.preventDefault(); uploadDrop.classList.add("drag"); });
+  });
+  ["dragleave", "dragend", "drop"].forEach(function (ev) {
+    uploadDrop.addEventListener(ev, function (e) { e.preventDefault(); uploadDrop.classList.remove("drag"); });
+  });
+  uploadDrop.addEventListener("drop", function (e) {
+    if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+  });
+
+  /* ---------------- Home: save the centred design ---------------- */
+  var focalSave = document.getElementById("focalSave");
+  function refreshFocalSave() {
+    var k = gFocalPrev && gFocalPrev._key;
+    focalSave.classList.toggle("on", !!(k && isSaved(k)));
+  }
+  focalSave.addEventListener("click", function () {
+    var k = gFocalPrev && gFocalPrev._key;
+    if (!k) return;
+    toggleSaved(k);
+    refreshFocalSave();
+    toast(isSaved(k) ? "Saved to Your Library" : "Removed from Saved");
+  });
+  setInterval(refreshFocalSave, 400);
+
+  /* ---------------- Taste ---------------- */
+  function allCoolEvents() {
+    var out = [];
+    Object.keys(reviewStore).forEach(function (k) {
+      (reviewStore[k] || []).forEach(function (rv) {
+        if (typeof rv.cool === "number") out.push({ key: k, cool: rv.cool, ts: rv.ts });
+      });
+    });
+    return out.sort(function (a, b) { return a.ts - b.ts; });
+  }
+  function reviewedKeys() {
+    return Object.keys(reviewStore).filter(function (k) { return reviewCount(k) > 0; });
+  }
+
+  var tasteStats = document.getElementById("tasteStats");
+  var affinityBars = document.getElementById("affinityBars");
+  var coolHistogram = document.getElementById("coolHistogram");
+  var coolSummary = document.getElementById("coolSummary");
+  var coolSpark = document.getElementById("coolSpark");
+  var topRated = document.getElementById("topRated");
+  var todayCard = document.getElementById("todayCard");
+  var compareBox = document.getElementById("compareBox");
+
+  function renderTaste() {
+    // stats
+    tasteStats.innerHTML = "";
+    [["Reviewed", reviewedKeys().length], ["Saved", saved.length],
+     ["Collections", collections.length], ["Keywords explored", seenKwCount() + " / " + KEYWORDS.length]]
+    .forEach(function (p) {
+      var d = document.createElement("div");
+      d.innerHTML = "<b>" + p[1] + "</b>" + p[0];
+      tasteStats.appendChild(d);
+    });
+
+    // today
+    var tkw = dailyKeyword(), tdz = dailyDesign(), td = resolveDesign(tdz);
+    todayCard.innerHTML = "";
+    var t1 = document.createElement("div");
+    t1.className = "tlabel"; t1.textContent = "Today's style";
+    var t2 = document.createElement("div");
+    var a1 = document.createElement("a"); a1.textContent = tkw;
+    a1.addEventListener("click", function () { gotoResearch("styles"); openInfo(tkw); });
+    var tnote = keywordNote(tkw).replace(new RegExp("^" + tkw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*[—-]\\s*"), "");
+    t2.appendChild(a1);
+    t2.appendChild(document.createTextNode(" — " + tnote.slice(0, 130)));
+    var t3 = document.createElement("div");
+    t3.className = "tlabel"; t3.style.marginTop = "0.6rem"; t3.textContent = "Today's design";
+    var a2 = document.createElement("a"); a2.textContent = td.title;
+    a2.addEventListener("click", function () { openSidebar(td); });
+    var t4 = document.createElement("div"); t4.appendChild(a2);
+    if (td.subtitle) t4.appendChild(document.createTextNode("  " + td.subtitle));
+    todayCard.appendChild(t1); todayCard.appendChild(t2);
+    todayCard.appendChild(t3); todayCard.appendChild(t4);
+
+    // affinity by category
+    affinityBars.innerHTML = "";
+    var rows = [];
+    Object.keys(ART_KEYWORDS).forEach(function (cat) {
+      var set = {};
+      ART_KEYWORDS[cat].forEach(function (t) { set[t.toLowerCase()] = 1; });
+      var vals = [];
+      allDesignKeys().forEach(function (k) {
+        var hit = designTags(k).some(function (x) { return set[x.toLowerCase()]; });
+        if (!hit) return;
+        (reviewStore[k] || []).forEach(function (rv) {
+          if (typeof rv.cool === "number") vals.push(rv.cool);
+        });
+      });
+      if (vals.length) rows.push({
+        label: (CATEGORY_META[cat] || {}).label || cat,
+        avg: Math.round(vals.reduce(function (s, v) { return s + v; }, 0) / vals.length),
+        n: vals.length
+      });
+    });
+    rows.sort(function (a, b) { return b.avg - a.avg; });
+    if (!rows.length) {
+      affinityBars.innerHTML = '<p class="lib-empty">Review a few designs and this fills in — it reads your tags.</p>';
+    } else {
+      rows.forEach(function (r) {
+        var row = document.createElement("div");
+        row.className = "affinity-row";
+        row.innerHTML = '<span class="affinity-label">' + r.label + '</span>' +
+          '<span class="affinity-track"><i style="width:' + r.avg + '%"></i></span>' +
+          '<span class="affinity-n">' + r.avg + '% · ' + r.n + '</span>';
+        affinityBars.appendChild(row);
+      });
+    }
+
+    // calibration histogram + summary + spark
+    var events = allCoolEvents();
+    var scores = events.map(function (e) { return e.cool; });
+    coolHistogram.innerHTML = "";
+    if (!scores.length) {
+      coolHistogram.innerHTML = '<p class="lib-empty" style="align-self:center">No ratings yet.</p>';
+      coolSummary.textContent = "";
+      coolSpark.innerHTML = "";
+    } else {
+      var buckets = [0,0,0,0,0,0,0,0,0,0];
+      scores.forEach(function (s) { buckets[Math.min(9, Math.floor(s / 10))]++; });
+      var mx = Math.max.apply(null, buckets) || 1;
+      buckets.forEach(function (b, i) {
+        var bar = document.createElement("div");
+        bar.className = "hb";
+        bar.style.height = (b / mx * 100) + "%";
+        bar.innerHTML = "<span>" + (i * 10) + "</span>";
+        coolHistogram.appendChild(bar);
+      });
+      var avg = Math.round(scores.reduce(function (s, v) { return s + v; }, 0) / scores.length);
+      var trend = "";
+      if (scores.length >= 6) {
+        var half = Math.min(5, Math.floor(scores.length / 2));
+        var recent = scores.slice(-half), prior = scores.slice(-half * 2, -half);
+        var dr = Math.round(recent.reduce(function (s, v) { return s + v; }, 0) / recent.length
+               - prior.reduce(function (s, v) { return s + v; }, 0) / prior.length);
+        trend = " · trend " + (dr >= 0 ? "+" : "") + dr + "% over your last " + half;
+      }
+      coolSummary.textContent = "Average " + avg + "%" + trend;
+      var W = 300, H = 60, n = scores.length;
+      var pts = scores.map(function (s, i) {
+        var x = n === 1 ? W / 2 : (i / (n - 1)) * W;
+        var y = H - (s / 100) * H;
+        return x.toFixed(1) + "," + y.toFixed(1);
+      }).join(" ");
+      var last = scores[n - 1];
+      coolSpark.innerHTML = '<polyline points="' + pts + '" />' +
+        '<circle cx="' + (n === 1 ? W / 2 : W) + '" cy="' + (H - (last / 100) * H).toFixed(1) + '" r="3" />';
+    }
+
+    // top rated
+    topRated.innerHTML = "";
+    var ranked = reviewedKeys().map(function (k) { return { k: k, c: avgCool(k) }; })
+      .filter(function (x) { return x.c != null; })
+      .sort(function (a, b) { return b.c - a.c; }).slice(0, 6);
+    if (!ranked.length) {
+      topRated.innerHTML = '<p class="lib-empty">Your highest-rated designs will collect here.</p>';
+    } else {
+      ranked.forEach(function (x) {
+        var d = resolveDesign(x.k);
+        topRated.appendChild(libCard({ key: d.key, title: d.title, subtitle: d.subtitle,
+          color: d.color, img: d.img, meta: x.c + "% cool" }));
+      });
+    }
+
+    renderCompare();
+  }
+
+  var cmpPair = null;
+  function renderCompare() {
+    compareBox.innerHTML = "";
+    var keys = allDesignKeys();
+    if (keys.length < 2) {
+      compareBox.innerHTML = '<p class="lib-empty">Add a couple of designs first.</p>';
+      return;
+    }
+    if (!cmpPair) {
+      var i = Math.floor(Math.random() * keys.length);
+      var j = Math.floor(Math.random() * (keys.length - 1)); if (j >= i) j++;
+      cmpPair = [keys[i], keys[j]];
+    }
+    cmpPair.forEach(function (k, idx) {
+      var d = resolveDesign(k);
+      var tile = document.createElement("div");
+      tile.className = "compare-tile";
+      tile.style.backgroundColor = d.color || "var(--purple-light-2)";
+      if (d.img) tile.style.backgroundImage = 'url("' + d.img + '")';
+      tile.textContent = d.img ? "" : d.title;
+      tile.addEventListener("click", function () {
+        var loser = cmpPair[1 - idx];
+        compares.push({ w: k, l: loser, ts: Date.now() });
+        saveJSON(CMP_KEY, compares);
+        cmpPair = null;
+        renderCompare();
+      });
+      compareBox.appendChild(tile);
+    });
+    var wins = {};
+    compares.forEach(function (c) { wins[c.w] = (wins[c.w] || 0) + 1; });
+    var leaderK = Object.keys(wins).sort(function (a, b) { return wins[b] - wins[a]; })[0];
+    var meta = document.createElement("div");
+    meta.className = "compare-meta";
+    meta.textContent = compares.length
+      ? compares.length + (compares.length === 1 ? " comparison" : " comparisons") + (leaderK ? " · leader: " + resolveDesign(leaderK).title : "")
+      : "Pick the one you'd rather have made.";
+    compareBox.appendChild(meta);
+  }
+
+  renderLibrary();
+
+  /* ---------------- Init ---------------- */
+  function build() {
+    dDragging = kwDragging = false;
+    dVX = dVY = kwVX = kwVY = dDX = dDY = kwDX = kwDY = 0;
+    buildGrid();
+    if (kwEverBuilt) buildKeywords(); // keep it in sync on resize, but only if it exists yet
+    updateHomeHint();
+    paintActive();
+  }
+  build();
+  initMetLive();
+  initCommunityDb();
+  var rz;
+  window.addEventListener("resize", function () {
+    clearTimeout(rz);
+    rz = setTimeout(build, 150);
+  });
+  requestAnimationFrame(tick);
+})();
+</script>
+
+</body></html>
